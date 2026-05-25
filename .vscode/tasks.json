@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "BabyArtist: Dev Server",
+      "type": "npm",
+      "script": "dev",
+      "path": ".",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^(.*Local:\\s+)(https?://\\S+.*)$",
+          "uri": 2
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "(vite|VITE)",
+          "endsPattern": "(ready in|Local:)"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      }
+    },
+    {
+      "label": "BabyArtist: Open in Simple Browser",
+      "type": "shell",
+      "command": "echo Open http://localhost:3001 via Command Palette: Simple Browser: Show",
+      "windows": {
+        "command": "echo."
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "close": true
+      }
+    },
+    {
+      "label": "BabyArtist: Dev + Preview",
+      "dependsOrder": "sequence",
+      "dependsOn": ["BabyArtist: Dev Server", "BabyArtist: Open in Simple Browser"],
+      "problemMatcher": []
+    }
+  ]
+}

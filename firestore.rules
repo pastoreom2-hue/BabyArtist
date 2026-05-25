@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: artworks
+    // Document ID: auto-generated
+    // Fields:
+    //   - title: string (required) - name of the piece
+    //   - dataUrl: string (required) - base64 image data
+    //   - userId: string (required) - creator's UID
+    //   - userName: string (optional) - creator's name
+    //   - createdAt: timestamp (required) - creation time
+    //   - isShared: boolean (optional) - sharing status
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required)
+    //   - role: string (required) - 'admin' or 'user'
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidArtwork(data) {
+      return data.keys().hasAll(['title', 'dataUrl', 'userId', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.dataUrl is string && data.dataUrl.size() < 2000000 && // ~2MB limit
+             data.userId == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['admin', 'user'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'user';
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role;
+    }
+
+    match /artworks/{artworkId} {
+      allow read: if isAuthenticated() && (isDocOwner() || resource.data.isShared == true);
+      allow create: if isAuthenticated() && isValidArtwork(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidArtwork(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+  }
+}

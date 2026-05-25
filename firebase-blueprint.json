@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "Artwork": {
+      "title": "Artwork",
+      "description": "A drawing or coloring piece created by a child.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The name of the artwork."
+        },
+        "dataUrl": {
+          "type": "string",
+          "description": "The base64 encoded image data."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who created the artwork."
+        },
+        "userName": {
+          "type": "string",
+          "description": "The name of the user who created the artwork."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the artwork was created."
+        },
+        "isShared": {
+          "type": "boolean",
+          "description": "Whether the artwork is shared with family/publicly."
+        }
+      },
+      "required": ["title", "dataUrl", "userId", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "The user's role."
+        }
+      },
+      "required": ["name", "email"]
+    }
+  },
+  "firestore": {
+    "/artworks/{artworkId}": {
+      "schema": "Artwork",
+      "description": "Collection of all saved artworks."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    }
+  }
+}

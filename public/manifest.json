@@ -1,0 +1,17 @@
+{
+  "name": "BabyArtist - 우리 아이 첫 그림판",
+  "short_name": "BabyArtist",
+  "description": "우리 아이를 위한 쉽고 재미있는 그림 그리기 놀이",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#facc15",
+  "theme_color": "#fefce8",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

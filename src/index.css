@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+}
+
+@layer base {
+  html, body {
+    @apply w-full m-0 p-0 overflow-hidden fixed inset-0;
+    height: 100vh;
+    height: -webkit-fill-available;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: none;
+  }
+  body {
+    @apply bg-yellow-400 text-slate-900 font-sans selection:bg-pink-300;
+  }
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.canvas-container {
+  touch-action: none;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+/* Aggressive Mobile Landscape Scaling (iPhone only) */
+@media (max-height: 440px) and (max-width: 950px) and (orientation: landscape) {
+  /* Compact main header */
+  header {
+    padding: 0.15rem 0.5rem !important;
+  }
+  header h1, 
+  header .hidden.xs\:inline,
+  header .hidden.lg\:inline,
+  header nav button span,
+  header p {
+    display: none !important;
+  }
+  header .max-w-7xl {
+    gap: 0.25rem !important;
+  }
+
+  /* Art Mode (Fullscreen) UI scaling */
+  .landscape-compact-header {
+    transform: scale(0.55) !important;
+    top: 0rem !important;
+  }
+  
+  .landscape-compact-toolbar {
+    transform: scale(0.5) !important;
+    left: -1rem !important; /* Move more to edge */
+    top: 50% !important;
+  }
+  
+  .landscape-compact-switcher {
+    transform: scale(0.5) !important;
+    right: 0rem !important;
+    bottom: -15px !important;
+  }
+}
