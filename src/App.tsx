@@ -7,6 +7,9 @@ import { DrawingCanvas } from './components/DrawingCanvas';
 import { Toolbar } from './components/Toolbar';
 import { ActivitySelector } from './components/ActivitySelector';
 import { Gallery } from './components/Gallery';
+import { FrameSelector } from './components/FrameSelector';
+import { FramedArtwork } from './components/FramedArtwork';
+import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
 import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Volume2, VolumeX, Star, X, Share2, Trophy, Eye, EyeOff, Pen } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -41,6 +44,7 @@ export default function App() {
   const [selectedSticker, setSelectedSticker] = useState<Sticker | null>(STICKERS[0]);
   const [dailyChallenge, setDailyChallenge] = useState("");
   const [isFullscreenUIHidden, setIsFullscreenUIHidden] = useState(false);
+  const [selectedFrame, setSelectedFrame] = useState<FrameId>(loadStoredFrame);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const drawingAreaRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +70,10 @@ export default function App() {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(FRAME_STORAGE_KEY, selectedFrame);
+  }, [selectedFrame]);
 
   useEffect(() => {
     const audio = new Audio();
@@ -224,6 +232,12 @@ export default function App() {
     setSavedArt(newArt);
     localStorage.setItem('colorjoy-art', JSON.stringify(newArt));
 
+    const dateTag = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+
     confetti({
       particleCount: 150,
       spread: 70,
@@ -239,6 +253,7 @@ export default function App() {
           userId: user.uid,
           userName: user.displayName,
           createdAt: serverTimestamp(),
+          dateTag,
           isShared: false
         });
       } catch (error) {
@@ -626,13 +641,17 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center mb-6">
                 <h2 className="text-3xl font-black text-purple-600 flex items-center gap-3">
                   <ImageIcon size={32} /> Your Gallery
                 </h2>
                 <p className="text-gray-500 font-bold">
                   {savedArt.length + artworks.length} Masterpieces
                 </p>
+              </div>
+
+              <div className="sticky top-[4.5rem] z-40 mb-8">
+                <FrameSelector selectedFrame={selectedFrame} onSelect={setSelectedFrame} />
               </div>
               
               {savedArt.length === 0 && artworks.length === 0 ? (
@@ -664,9 +683,14 @@ export default function App() {
                           <motion.div
                             key={`local-${i}`}
                             whileHover={{ scale: 1.05, rotate: i % 2 === 0 ? 2 : -2 }}
-                            className="bg-white p-3 rounded-2xl border-4 border-slate-800 shadow-[6px_6px_0px_0px_rgba(30,41,59,1)] group relative"
+                            className="bg-white p-3 rounded-2xl border-4 border-slate-800 shadow-[6px_6px_0px_0px_rgba(30,41,59,1)] group relative overflow-hidden"
                           >
-                            <img src={art} alt={`Art ${i}`} className="w-full h-auto rounded-lg border-2 border-slate-100" />
+                            <FramedArtwork
+                              src={art}
+                              alt={`Art ${i}`}
+                              frameId={selectedFrame}
+                              className="w-full aspect-square rounded-lg"
+                            />
                             <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={() => {
@@ -693,6 +717,7 @@ export default function App() {
                       </h3>
                       <Gallery 
                         artworks={artworks} 
+                        selectedFrame={selectedFrame}
                         onDelete={handleDeleteArtwork} 
                         onShare={handleShareArtwork} 
                       />

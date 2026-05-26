@@ -335,7 +335,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   return (
     <div className="w-full h-full relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 touch-none">
-      {/* The Yellow Frame - Responsive thickness */}
       <div className="absolute inset-2 sm:inset-4 border-[4px] sm:border-[10px] border-yellow-400 rounded-[0.8rem] sm:rounded-[1.2rem] pointer-events-none z-[998] shadow-sm" />
       
       <canvas

@@ -8,6 +8,7 @@ export interface Artwork {
   userId: string;
   userName?: string;
   createdAt: any;
+  dateTag?: string; // YYYY-MM-DD (local)
   isShared?: boolean;
 }
 
