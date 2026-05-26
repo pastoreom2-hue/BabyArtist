@@ -1,8 +1,9 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { ActivityType, ActivityLevel, Sticker } from '../types';
 import { Trash2, Save } from 'lucide-react';
 import { HybridModal } from './HybridModal';
+import { drawActivityTemplate, getActivityHint, getColorLegend } from '../activityTemplates';
 
 const DAILY_CREDITS_KEY = 'babyartist-daily-credits';
 const DEFAULT_DAILY_CREDITS = 0;
@@ -16,6 +17,7 @@ interface DrawingCanvasProps {
   activeTool: 'pen' | 'sticker';
   selectedSticker: Sticker | null;
   isFullscreen?: boolean;
+  onColorChange?: (color: string) => void;
 }
 
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ 
@@ -26,7 +28,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   level,
   activeTool,
   selectedSticker,
-  isFullscreen
+  isFullscreen,
+  onColorChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const templateRef = useRef<HTMLCanvasElement>(null);
@@ -58,6 +61,43 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   useEffect(() => {
     isDrawingRef.current = isDrawing;
   }, [isDrawing]);
+
+  const resetDrawingCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    canvas.width = canvas.width;
+    ctx.scale(2, 2);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    contextRef.current = ctx;
+  }, []);
+
+  const drawTemplate = useCallback(() => {
+    const template = templateRef.current;
+    const canvas = canvasRef.current;
+    if (!template || !canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+    const ctx = template.getContext('2d');
+    if (!ctx) return;
+
+    if (activityType === 'free-draw') {
+      ctx.clearRect(0, 0, template.width, template.height);
+      return;
+    }
+
+    drawActivityTemplate(ctx, activityType, level, width, height);
+  }, [activityType, level]);
+
+  useEffect(() => {
+    resetDrawingCanvas();
+    drawTemplate();
+  }, [activityType, level, resetDrawingCanvas, drawTemplate]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -91,7 +131,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // Native Non-Passive Event Listeners for iPad/Touch stability
     const onTouchStartNative = (e: TouchEvent) => {
       if (e.cancelable) e.preventDefault();
       handleInteraction(e as any);
@@ -114,98 +153,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       canvas.removeEventListener('touchmove', onTouchMoveNative);
       canvas.removeEventListener('touchend', onTouchEndNative);
     };
-  }, [activityType, level, isFullscreen]);
-
-  const drawTemplate = () => {
-    const template = templateRef.current;
-    if (!template) return;
-    const ctx = template.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, template.width, template.height);
-    ctx.save();
-    ctx.scale(2, 2);
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-
-    const w = template.width / 2;
-    const h = template.height / 2;
-
-    if (activityType === 'shape-match') {
-      if (level === 1) {
-        drawCircle(ctx, w * 0.25, h * 0.5, 50);
-        drawSquare(ctx, w * 0.5, h * 0.5, 80);
-        drawTriangle(ctx, w * 0.75, h * 0.5, 80);
-      } else if (level === 2) {
-        drawCircle(ctx, w * 0.2, h * 0.3, 40);
-        drawSquare(ctx, w * 0.5, h * 0.3, 60);
-        drawTriangle(ctx, w * 0.8, h * 0.3, 60);
-        drawStar(ctx, w * 0.35, h * 0.7, 40);
-        drawHeart(ctx, w * 0.65, h * 0.7, 40);
-      } else {
-        for (let i = 0; i < 3; i++) {
-          for (let j = 0; j < 3; j++) {
-            drawCircle(ctx, w * (0.25 + i * 0.25), h * (0.25 + j * 0.25), 30);
-          }
-        }
-      }
-    } else if (activityType === 'color-by-number') {
-      ctx.setLineDash([]);
-      ctx.strokeStyle = '#cbd5e1';
-      if (level === 1) {
-        drawFlower(ctx, w * 0.5, h * 0.5, 100);
-      } else if (level === 2) {
-        ctx.font = 'bold 120px Outfit';
-        ctx.textAlign = 'center';
-        ctx.strokeText('A B C', w * 0.5, h * 0.4);
-        ctx.strokeText('D E F', w * 0.5, h * 0.7);
-      } else {
-        drawRainbow(ctx, w * 0.5, h * 0.7, 150);
-      }
-    }
-
-    ctx.restore();
-  };
-
-  const drawCircle = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-  };
-  const drawSquare = (ctx: CanvasRenderingContext2D, x: number, y: number, s: number) => {
-    ctx.strokeRect(x - s/2, y - s/2, s, s);
-  };
-  const drawTriangle = (ctx: CanvasRenderingContext2D, x: number, y: number, s: number) => {
-    ctx.beginPath(); ctx.moveTo(x, y - s/2); ctx.lineTo(x + s/2, y + s/2); ctx.lineTo(x - s/2, y + s/2); ctx.closePath(); ctx.stroke();
-  };
-  const drawStar = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-    ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-      ctx.lineTo(Math.cos((18 + i * 72) / 180 * Math.PI) * r + x, -Math.sin((18 + i * 72) / 180 * Math.PI) * r + y);
-      ctx.lineTo(Math.cos((54 + i * 72) / 180 * Math.PI) * (r/2) + x, -Math.sin((54 + i * 72) / 180 * Math.PI) * (r/2) + y);
-    }
-    ctx.closePath(); ctx.stroke();
-  };
-  const drawHeart = (ctx: CanvasRenderingContext2D, x: number, y: number, s: number) => {
-    ctx.beginPath();
-    ctx.moveTo(x, y + s/4);
-    ctx.bezierCurveTo(x, y, x - s/2, y, x - s/2, y + s/4);
-    ctx.bezierCurveTo(x - s/2, y + s/2, x, y + s*0.7, x, y + s);
-    ctx.bezierCurveTo(x, y + s*0.7, x + s/2, y + s/2, x + s/2, y + s/4);
-    ctx.bezierCurveTo(x + s/2, y, x, y, x, y + s/4);
-    ctx.stroke();
-  };
-  const drawFlower = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * 60) * Math.PI / 180;
-      drawCircle(ctx, x + Math.cos(angle) * r/2, y + Math.sin(angle) * r/2, r/3);
-    }
-    drawCircle(ctx, x, y, r/4);
-  };
-  const drawRainbow = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath(); ctx.arc(x, y, r - i * 20, Math.PI, 0); ctx.stroke();
-    }
-  };
+  }, [activityType, level, isFullscreen, drawTemplate, resetDrawingCanvas]);
 
   const handleInteraction = (e: any) => {
     if (e.cancelable) e.preventDefault();
@@ -349,6 +297,44 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         onMouseLeave={stopDrawing}
         className={`absolute inset-0 z-10 touch-none ${activeTool === 'sticker' ? 'cursor-copy' : 'cursor-crosshair'}`}
       />
+
+      {isActivityMode && activityHint && (
+        <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-[999] pointer-events-none">
+          <div className="bg-white/95 backdrop-blur-sm border-2 border-blue-200 rounded-xl px-3 py-2 shadow-md max-w-md">
+            <p className="text-[10px] sm:text-xs font-black text-blue-700 uppercase tracking-wide mb-0.5">
+              {activityType === 'color-by-number' ? '🎨 Color by Number' : '⭐ Shape Match'} · Lvl {level}
+            </p>
+            <p className="text-xs sm:text-sm font-bold text-slate-700">{activityHint}</p>
+          </div>
+        </div>
+      )}
+
+      {colorLegend.length > 0 && (
+        <div className="absolute bottom-24 left-3 sm:bottom-28 sm:left-4 z-[999] pointer-events-auto">
+          <div className="bg-white/95 backdrop-blur-sm border-2 border-pink-200 rounded-xl p-2 shadow-lg">
+            <p className="text-[9px] font-black text-pink-600 uppercase mb-1.5 px-1">Color Guide</p>
+            <div className="flex flex-wrap gap-1 max-w-[10rem] sm:max-w-none">
+              {colorLegend.map(({ number, name, value }) => (
+                <button
+                  key={number}
+                  type="button"
+                  onClick={() => onColorChange?.(value)}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-pink-50 transition-colors"
+                  title={`Pick ${name} for #${number}`}
+                >
+                  <span
+                    className="w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow"
+                    style={{ backgroundColor: value }}
+                  >
+                    {number}
+                  </span>
+                  <span className="text-[9px] font-bold text-gray-600 hidden sm:inline">{name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       
       {dailyCredits > 0 && (
         <motion.div
