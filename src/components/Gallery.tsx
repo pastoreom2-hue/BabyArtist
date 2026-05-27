@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Artwork } from '../types';
-import { Share2, Trash2, Calendar, Download, Send } from 'lucide-react';
+import { Trash2, Calendar, Link2 } from 'lucide-react';
 import { FramedArtwork } from './FramedArtwork';
 import { FrameId } from '../frames';
+import { ArtworkShareActions } from './ArtworkShareActions';
 
 interface GalleryProps {
   artworks: Artwork[];
@@ -17,39 +18,6 @@ function getArtworkDateLabel(artwork: Artwork) {
   const ts = (artwork as any)?.createdAt;
   if (ts?.seconds) return new Date(ts.seconds * 1000).toLocaleDateString();
   return 'Just now';
-}
-
-function downloadDataUrl(dataUrl: string, filenameBase: string) {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = `${filenameBase}.png`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-async function shareToFamily(artwork: Artwork) {
-  const shareUrl = artwork.id ? `${window.location.origin}/share/${artwork.id}` : undefined;
-
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: artwork.title,
-        text: '우리 아이의 멋진 작품을 공유해요!',
-        url: shareUrl,
-      });
-      return;
-    } catch {
-      // ignore and fall back
-    }
-  }
-
-  if (shareUrl) {
-    await navigator.clipboard.writeText(shareUrl);
-    alert('공유 링크를 클립보드에 복사했어요! 가족에게 보내주세요.');
-  } else {
-    alert('이 작품은 링크 공유를 지원하지 않아요. 먼저 클라우드에 저장해 주세요.');
-  }
 }
 
 export const Gallery: React.FC<GalleryProps> = ({ artworks, selectedFrame, onDelete, onShare }) => {
@@ -79,40 +47,31 @@ export const Gallery: React.FC<GalleryProps> = ({ artworks, selectedFrame, onDel
               className="w-full h-full"
             />
 
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-              <button
-                onClick={() =>
-                  downloadDataUrl(
-                    artwork.dataUrl,
-                    (artwork.title || 'babyartist').replace(/\s+/g, '-')
-                  )
-                }
-                className="p-4 bg-white text-slate-700 rounded-2xl hover:bg-slate-50 transition-all shadow-lg"
-                title="이미지 내보내기"
-              >
-                <Download size={22} />
-              </button>
-              <button
-                onClick={() => shareToFamily(artwork)}
-                className="p-4 bg-white text-emerald-600 rounded-2xl hover:bg-emerald-50 transition-all shadow-lg"
-                title="가족에게 보내기"
-              >
-                <Send size={22} />
-              </button>
-              <button
-                onClick={() => onShare(artwork)}
-                className="p-4 bg-white text-blue-500 rounded-2xl hover:bg-blue-50 transition-all shadow-lg"
-                title="공유 링크"
-              >
-                <Share2 size={22} />
-              </button>
-              <button
-                onClick={() => artwork.id && onDelete(artwork.id)}
-                className="p-4 bg-white text-red-500 rounded-2xl hover:bg-red-50 transition-all shadow-lg"
-                title="삭제"
-              >
-                <Trash2 size={22} />
-              </button>
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-3">
+              <p className="text-white text-xs font-bold text-center drop-shadow">
+                액자 포함 · SNS / 이메일 공유
+              </p>
+              <ArtworkShareActions
+                dataUrl={artwork.dataUrl}
+                title={artwork.title}
+                frameId={selectedFrame}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onShare(artwork)}
+                  className="p-2.5 bg-white/90 text-blue-600 rounded-xl hover:bg-white transition-all shadow"
+                  title="공유 링크 복사"
+                >
+                  <Link2 size={18} />
+                </button>
+                <button
+                  onClick={() => artwork.id && onDelete(artwork.id)}
+                  className="p-2.5 bg-white/90 text-red-500 rounded-xl hover:bg-white transition-all shadow"
+                  title="삭제"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
           </div>
 

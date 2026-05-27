@@ -9,6 +9,7 @@ import { ActivitySelector } from './components/ActivitySelector';
 import { Gallery } from './components/Gallery';
 import { FrameSelector } from './components/FrameSelector';
 import { FramedArtwork } from './components/FramedArtwork';
+import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
 import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Volume2, VolumeX, Star, X, Share2, Trophy, Eye, EyeOff, Pen } from 'lucide-react';
@@ -692,16 +693,23 @@ export default function App() {
                               frameId={selectedFrame}
                               className="w-full aspect-square rounded-lg"
                             />
-                            <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2 rounded-lg">
+                              <p className="text-white text-[10px] font-bold text-center">액자 · SNS 공유</p>
+                              <ArtworkShareActions
+                                dataUrl={art}
+                                title={`Masterpiece ${i + 1}`}
+                                frameId={selectedFrame}
+                              />
+                              <button
                                 onClick={() => {
                                   const newArt = savedArt.filter((_, index) => index !== i);
                                   setSavedArt(newArt);
                                   localStorage.setItem('colorjoy-art', JSON.stringify(newArt));
                                 }}
-                                className="p-2 bg-red-500 text-white rounded-full border-2 border-slate-800 shadow-md"
+                                className="p-2 bg-red-500 text-white rounded-full border-2 border-slate-800 shadow-md text-xs font-bold"
+                                title="삭제"
                               >
-                                <X size={16} />
+                                <X size={14} />
                               </button>
                             </div>
                           </motion.div>
