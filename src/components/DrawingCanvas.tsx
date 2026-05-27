@@ -253,11 +253,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   const handleClear = () => {
-    const canvas = canvasRef.current;
-    if (canvas && contextRef.current) {
-      contextRef.current.clearRect(0, 0, canvas.width, canvas.height);
-    }
+    resetDrawingCanvas();
   };
+
+  const isActivityMode = activityType !== 'free-draw';
+  const activityHint = getActivityHint(activityType, level);
+  const colorLegend = activityType === 'color-by-number' ? getColorLegend(level === 1 ? 7 : 6) : [];
 
   const handleSave = () => {
     if (dailyCredits <= 0) {
@@ -277,17 +278,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   const handleBuyVip = () => {
-    // TODO: 실제 결제 연동 (Stripe / App Store 등)
     alert('VIP 패스 결제는 곧 지원될 예정이에요!');
   };
 
   return (
     <div className="w-full h-full relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 touch-none">
       <div className="absolute inset-2 sm:inset-4 border-[4px] sm:border-[10px] border-yellow-400 rounded-[0.8rem] sm:rounded-[1.2rem] pointer-events-none z-[998] shadow-sm" />
-      
+
       <canvas
         ref={templateRef}
-        className="absolute inset-0 z-0 pointer-events-none opacity-50"
+        className="absolute inset-0 z-[5] pointer-events-none"
       />
       <canvas
         ref={canvasRef}
@@ -302,7 +302,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-[999] pointer-events-none">
           <div className="bg-white/95 backdrop-blur-sm border-2 border-blue-200 rounded-xl px-3 py-2 shadow-md max-w-md">
             <p className="text-[10px] sm:text-xs font-black text-blue-700 uppercase tracking-wide mb-0.5">
-              {activityType === 'color-by-number' ? '🎨 Color by Number' : '⭐ Shape Match'} · Lvl {level}
+              {activityType === 'color-by-number' ? 'Color by Number' : 'Shape Match'} · Lvl {level}
             </p>
             <p className="text-xs sm:text-sm font-bold text-slate-700">{activityHint}</p>
           </div>
@@ -335,7 +335,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           </div>
         </div>
       )}
-      
+
       {dailyCredits > 0 && (
         <motion.div
           initial={{ opacity: 0, x: -10 }}
@@ -355,7 +355,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         onBuyVip={handleBuyVip}
       />
 
-      {/* Floating Canvas Controls - Responsive sizing and positioning for iPad/iPhone */}
       <div className="absolute bottom-6 right-6 sm:bottom-12 sm:right-12 lg:bottom-16 lg:right-16 z-[999] flex gap-2 sm:gap-4 pointer-events-auto">
         <motion.button
           whileHover={{ scale: 1.1 }}

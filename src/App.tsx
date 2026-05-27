@@ -557,6 +557,7 @@ export default function App() {
                       activeTool={activeTool}
                       selectedSticker={selectedSticker}
                       isFullscreen={isFullscreen}
+                      onColorChange={setCurrentColor}
                     />
 
                     {/* Daily Challenge Modal - Centered over the Whiteboard */}
