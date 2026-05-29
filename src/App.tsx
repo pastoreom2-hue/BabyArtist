@@ -10,7 +10,13 @@ import { Gallery } from './components/Gallery';
 import { FrameSelector } from './components/FrameSelector';
 import { FramedArtwork } from './components/FramedArtwork';
 import { ArtworkShareActions } from './components/ArtworkShareActions';
+import { OnboardingTour } from './components/OnboardingTour';
+import { PhotoUploadButton } from './components/PhotoUploadButton';
+import { GalleryShareGuide } from './components/GalleryShareGuide';
+import { HelpModal, HelpFab } from './components/HelpModal';
+import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
+import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
 import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Volume2, VolumeX, Star, X, Share2, Trophy, Eye, EyeOff, Pen } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -46,7 +52,10 @@ export default function App() {
   const [dailyChallenge, setDailyChallenge] = useState("");
   const [isFullscreenUIHidden, setIsFullscreenUIHidden] = useState(false);
   const [selectedFrame, setSelectedFrame] = useState<FrameId>(loadStoredFrame);
+  const [showTour, setShowTour] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const adBannerOffset = useAdBannerOffset(isFullscreen);
   const drawingAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,6 +84,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(FRAME_STORAGE_KEY, selectedFrame);
   }, [selectedFrame]);
+
+  useEffect(() => {
+    if (!isAuthReady || isTourCompleted()) return;
+    const timer = window.setTimeout(() => setShowTour(true), 900);
+    return () => window.clearTimeout(timer);
+  }, [isAuthReady]);
 
   useEffect(() => {
     const audio = new Audio();
@@ -263,6 +278,10 @@ export default function App() {
     }
   };
 
+  const handlePhotoUpload = (dataUrl: string) => {
+    void handleSaveArtwork(dataUrl);
+  };
+
   const handleDeleteArtwork = async (id: string) => {
     if (!confirm('Are you sure you want to delete this drawing?')) return;
     try {
@@ -396,7 +415,10 @@ export default function App() {
         </div>
       </header>
 
-      <main className={`${isFullscreen ? 'fixed inset-0 z-[100] bg-white w-screen h-screen m-0 p-0 max-w-none' : 'max-w-7xl mx-auto p-4 sm:p-8 pb-24'}`}>
+      <main
+        className={`${isFullscreen ? 'fixed inset-0 z-[100] bg-white w-screen h-screen m-0 p-0 max-w-none' : 'max-w-7xl mx-auto p-4 sm:p-8'}`}
+        style={{ paddingBottom: isFullscreen ? undefined : adBannerOffset }}
+      >
         <AnimatePresence mode="wait">
           {view === 'draw' ? (
             <motion.div
@@ -406,6 +428,12 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className={`flex flex-col h-full ${isFullscreen ? '!transform-none !m-0 !p-0 !w-full !h-full relative z-[101]' : ''}`}
             >
+              {!isFullscreen && (
+                <div className="mb-4 flex justify-center sm:justify-start">
+                  <PhotoUploadButton onUpload={handlePhotoUpload} />
+                </div>
+              )}
+
               <div 
                 ref={drawingAreaRef}
                 className={`flex flex-col ${
@@ -652,9 +680,14 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="sticky top-[4.5rem] z-40 mb-8">
+              <div className="sticky top-[4.5rem] z-40 mb-4">
                 <FrameSelector selectedFrame={selectedFrame} onSelect={setSelectedFrame} />
               </div>
+
+              <GalleryShareGuide
+                selectedFrame={selectedFrame}
+                previewUrl={savedArt[0] ?? artworks[0]?.dataUrl}
+              />
               
               {savedArt.length === 0 && artworks.length === 0 ? (
                 <div className="bg-white p-12 rounded-3xl shadow-xl text-center flex flex-col items-center gap-6 border-4 border-blue-200">
@@ -759,8 +792,23 @@ export default function App() {
         </AnimatePresence>
       </main>
 
+      <OnboardingTour
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+        currentView={view}
+        onChangeView={setView}
+      />
+
+      <HelpFab onClick={() => setIsHelpOpen(true)} hidden={isFullscreen} />
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+      <AdMobBanner hidden={isFullscreen} />
+
       {/* Footer */}
-      <footer className="p-8 text-center text-gray-400 font-medium">
+      <footer
+        className="p-6 text-center text-gray-400 font-medium text-sm"
+        style={{ paddingBottom: isFullscreen ? undefined : adBannerOffset }}
+      >
         <p>© 2026 BabyArtist Kids Creative Studio • Made with ❤️ for little artists</p>
       </footer>
     </div>

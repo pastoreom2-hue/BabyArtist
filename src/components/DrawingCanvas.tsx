@@ -2,11 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { ActivityType, ActivityLevel, Sticker } from '../types';
 import { Trash2, Save } from 'lucide-react';
-import { HybridModal } from './HybridModal';
 import { drawActivityTemplate, getActivityHint, getColorLegend } from '../activityTemplates';
-
-const DAILY_CREDITS_KEY = 'babyartist-daily-credits';
-const DEFAULT_DAILY_CREDITS = 0;
 
 interface DrawingCanvasProps {
   color: string;
@@ -35,16 +31,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const templateRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [dailyCredits, setDailyCredits] = useState(() => {
-    const stored = localStorage.getItem(DAILY_CREDITS_KEY);
-    return stored !== null ? Number(stored) : DEFAULT_DAILY_CREDITS;
-  });
-  const [isHybridModalOpen, setIsHybridModalOpen] = useState(false);
   const isDrawingRef = useRef(false);
-
-  useEffect(() => {
-    localStorage.setItem(DAILY_CREDITS_KEY, String(dailyCredits));
-  }, [dailyCredits]);
 
   // Use refs for configuration to avoid re-binding native listeners and to ensures latest values are used
   const configRef = useRef({ color, brushSize, activeTool, selectedSticker });
@@ -261,24 +248,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const colorLegend = activityType === 'color-by-number' ? getColorLegend(level === 1 ? 7 : 6) : [];
 
   const handleSave = () => {
-    if (dailyCredits <= 0) {
-      setIsHybridModalOpen(true);
-      return;
-    }
-
     if (canvasRef.current) {
-      setDailyCredits((prev) => prev - 1);
       onSave(canvasRef.current.toDataURL());
     }
-  };
-
-  const handleWatchAd = () => {
-    setDailyCredits((prev) => prev + 1);
-    setIsHybridModalOpen(false);
-  };
-
-  const handleBuyVip = () => {
-    alert('VIP 패스 결제는 곧 지원될 예정이에요!');
   };
 
   return (
@@ -335,25 +307,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           </div>
         </div>
       )}
-
-      {dailyCredits > 0 && (
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="absolute top-6 left-6 sm:top-8 sm:left-8 z-[999] px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border-2 border-pink-200 shadow-md"
-        >
-          <span className="text-xs sm:text-sm font-black text-pink-600">
-            오늘 남은 횟수: {dailyCredits}
-          </span>
-        </motion.div>
-      )}
-
-      <HybridModal
-        isOpen={isHybridModalOpen}
-        onClose={() => setIsHybridModalOpen(false)}
-        onWatchAd={handleWatchAd}
-        onBuyVip={handleBuyVip}
-      />
 
       <div className="absolute bottom-6 right-6 sm:bottom-12 sm:right-12 lg:bottom-16 lg:right-16 z-[999] flex gap-2 sm:gap-4 pointer-events-auto">
         <motion.button

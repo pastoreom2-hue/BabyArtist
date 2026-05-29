@@ -11,6 +11,7 @@ interface FrameSelectorProps {
 export const FrameSelector: React.FC<FrameSelectorProps> = ({ selectedFrame, onSelect }) => {
   return (
     <section
+      data-tour="tour-step-2"
       className="bg-gradient-to-r from-amber-50 via-white to-pink-50 rounded-2xl sm:rounded-3xl shadow-lg border-4 border-amber-200 p-4 sm:p-5"
       aria-label="액자 선택"
     >
