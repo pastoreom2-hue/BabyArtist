@@ -62,6 +62,10 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
             label: 'Levels 1 · 2 · 3',
             text: 'For Shape Match and Color by Number, tap the **Lvl** number buttons below the activity bar. Level 1 is gentle, Level 3 is a bigger challenge!',
           },
+          {
+            label: 'Fun Stickers',
+            text: 'In the left toolbar, tap **Stickers**, choose a cute sticker, then tap anywhere on the canvas to place it!',
+          },
         ],
       },
       {
@@ -71,7 +75,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: 'Upload Drawing',
-            text: 'On the Create screen, tap the blue **Upload Drawing** button to take a photo or choose one from your gallery.',
+            text: 'Tap **Upload Drawing** in the top menu bar to take a photo or choose one from your gallery.',
           },
           {
             label: 'Save from Canvas',
@@ -170,6 +174,10 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
             label: '레벨 1 · 2 · 3',
             text: 'Shape Match와 Color by Number에서는 활동 버튼 **아래 Lvl 숫자**를 눌러 난이도를 바꿔요. 1은 쉬움, 3은 도전!',
           },
+          {
+            label: '스티커 붙이기',
+            text: '왼쪽 도구에서 **Stickers**를 누르고 마음에 드는 스티커를 고른 뒤, 캔버스 아무 곳이나 터치하면 붙어요!',
+          },
         ],
       },
       {
@@ -179,7 +187,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: '그림 올리기',
-            text: 'Create 화면 상단의 파란 **그림 올리기** 버튼으로 사진을 찍거나 앨범에서 고르세요.',
+            text: '상단 메뉴의 **Upload Drawing** 버튼으로 사진을 찍거나 앨범에서 고르세요.',
           },
           {
             label: '캔버스 저장',

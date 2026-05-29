@@ -1,15 +1,17 @@
 import React, { useRef } from 'react';
-import { motion } from 'motion/react';
 import { Camera } from 'lucide-react';
+import { NavBarLabelButton } from './NavBarButton';
 
 interface PhotoUploadButtonProps {
   onUpload: (dataUrl: string) => void;
   className?: string;
+  variant?: 'standalone' | 'nav';
 }
 
 export const PhotoUploadButton: React.FC<PhotoUploadButtonProps> = ({
   onUpload,
   className = '',
+  variant = 'nav',
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -27,24 +29,41 @@ export const PhotoUploadButton: React.FC<PhotoUploadButtonProps> = ({
     e.target.value = '';
   };
 
+  const input = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept="image/*"
+      capture="environment"
+      className="hidden"
+      onChange={handleChange}
+      aria-label="Upload drawing photo"
+    />
+  );
+
+  if (variant === 'nav') {
+    return (
+      <NavBarLabelButton
+        icon={Camera}
+        label="Upload Drawing"
+        shortLabel="Upload"
+        variant="upload"
+        data-tour="tour-step-1"
+        className={className}
+      >
+        {input}
+      </NavBarLabelButton>
+    );
+  }
+
   return (
-    <motion.label
+    <label
       data-tour="tour-step-1"
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
       className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-2xl font-black shadow-lg border-4 border-sky-300 cursor-pointer select-none ${className}`}
     >
       <Camera size={22} className="flex-shrink-0" />
-      <span className="text-sm sm:text-base whitespace-nowrap">그림 올리기</span>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleChange}
-        aria-label="아이 그림 사진 업로드"
-      />
-    </motion.label>
+      <span className="text-sm sm:text-base whitespace-nowrap">Upload Drawing</span>
+      {input}
+    </label>
   );
 };

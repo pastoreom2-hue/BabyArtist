@@ -11,10 +11,10 @@ import { FrameSelector } from './components/FrameSelector';
 import { FramedArtwork } from './components/FramedArtwork';
 import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { OnboardingTour } from './components/OnboardingTour';
-import { PhotoUploadButton } from './components/PhotoUploadButton';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
 import { HelpModal, HelpFab } from './components/HelpModal';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
+import { AppNavBar } from './components/AppNavBar';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
@@ -326,68 +326,33 @@ export default function App() {
   return (
     <div className="min-h-screen bg-yellow-50 font-sans text-gray-800">
       {/* Header - Hidden in Fullscreen to maximize canvas space */}
-      <header className={`bg-white shadow-md p-3 sm:p-4 sticky top-0 z-50 ${isFullscreen ? 'hidden' : ''}`}>
-        <div className="max-w-7xl mx-auto flex justify-between items-center overflow-x-auto sm:overflow-visible gap-4 pb-1 sm:pb-0 scrollbar-hide">
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="p-1.5 sm:p-2 bg-pink-500 rounded-lg sm:rounded-xl text-white">
+      <header className={`bg-white shadow-md sticky top-0 z-50 ${isFullscreen ? 'hidden' : ''}`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center gap-3 p-3 sm:p-4">
+          <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+            <div className="p-1.5 sm:p-2 bg-pink-500 rounded-lg sm:rounded-xl text-white flex-shrink-0">
               <Palette className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
-            <h1 className="text-xl sm:text-3xl font-black text-pink-500 tracking-tight flex items-center">
+            <h1 className="text-lg sm:text-3xl font-black text-pink-500 tracking-tight truncate">
               BabyArtist
-              <span className="ml-2 text-xs sm:text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent hidden xs:inline">
+              <span className="ml-1 sm:ml-2 text-xs sm:text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:inline">
                 - 우리 아이 그림판
               </span>
             </h1>
           </div>
 
-          <nav className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-            <button
-              onClick={() => setView('draw')}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold transition-all text-sm sm:text-base whitespace-nowrap ${
-                view === 'draw' ? 'bg-pink-100 text-pink-600' : 'text-pink-400 hover:bg-pink-50'
-              }`}
-            >
-              <Palette size={18} /> <span className="hidden xs:inline">Create</span>
-            </button>
-            <button
-              onClick={() => setView('gallery')}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold transition-all text-sm sm:text-base whitespace-nowrap ${
-                view === 'gallery' ? 'bg-emerald-100 text-emerald-600' : 'text-emerald-500 hover:bg-emerald-50'
-              }`}
-            >
-              <ImageIcon size={18} /> <span className="hidden sm:inline">Gallery</span>
-            </button>
-            
-            <div className="h-8 w-px bg-gray-200 mx-1 sm:mx-2" />
-
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <button
               onClick={toggleMusic}
-              className={`p-1.5 sm:p-3 rounded-full transition-all shadow-md flex items-center gap-2 relative group ${
+              className={`p-2 sm:p-3 rounded-full transition-all shadow-md flex items-center justify-center ${
                 isMusicPlaying ? 'bg-yellow-400 text-white' : 'bg-white text-amber-400 border-2 border-amber-100'
               }`}
               title={isMusicPlaying ? 'Stop Music' : 'Play Music'}
             >
               <Music size={20} className={isMusicPlaying ? 'animate-bounce' : ''} />
-              <div className="flex flex-col items-start leading-tight">
-                <span className="hidden lg:inline font-bold text-sm">
-                  {isMusicPlaying ? "Art with Music" : 'Play Music'}
-                </span>
-                {isMusicPlaying && (
-                  <span className="hidden lg:inline text-[10px] font-medium opacity-80">
-                    Now: {NURSERY_RHYMES[currentTrackIndex].name}
-                  </span>
-                )}
-              </div>
             </button>
 
-            <div className="h-8 w-px bg-gray-200 mx-1 sm:mx-2" />
-
             {user ? (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="hidden lg:block text-right">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Artist</p>
-                  <p className="text-xs font-bold">{user.displayName}</p>
-                </div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="Profile" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-pink-200 flex-shrink-0" referrerPolicy="no-referrer" />
                 ) : (
@@ -406,13 +371,19 @@ export default function App() {
             ) : (
               <button
                 onClick={signIn}
-                className="flex items-center gap-2 px-3 sm:px-6 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg sm:rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg text-xs sm:text-base whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg text-xs sm:text-sm whitespace-nowrap"
               >
                 <LogIn size={18} /> <span className="hidden sm:inline">Login</span>
               </button>
             )}
-          </nav>
+          </div>
         </div>
+
+        <AppNavBar
+          view={view}
+          onViewChange={setView}
+          onPhotoUpload={handlePhotoUpload}
+        />
       </header>
 
       <main
@@ -428,12 +399,6 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className={`flex flex-col h-full ${isFullscreen ? '!transform-none !m-0 !p-0 !w-full !h-full relative z-[101]' : ''}`}
             >
-              {!isFullscreen && (
-                <div className="mb-4 flex justify-center sm:justify-start">
-                  <PhotoUploadButton onUpload={handlePhotoUpload} />
-                </div>
-              )}
-
               <div 
                 ref={drawingAreaRef}
                 className={`flex flex-col ${

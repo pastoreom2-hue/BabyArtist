@@ -209,6 +209,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-black">
                               <Hash size={12} /> Lvl 1·2·3
                             </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-yellow-100 text-yellow-700 text-[10px] font-black">
+                              <Sparkles size={12} /> Stickers
+                            </span>
                           </div>
                         )}
                       </section>
@@ -310,7 +313,7 @@ export const HelpFab: React.FC<{ onClick: () => void; hidden?: boolean }> = ({
       onClick={onClick}
       className="fixed z-[9998] p-2.5 sm:p-3 rounded-full bg-white text-pink-500 hover:bg-pink-50 transition-colors shadow-lg border-2 border-pink-200 hover:border-pink-300 ring-4 ring-white/80"
       style={{
-        top: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
+        top: 'calc(6.75rem + env(safe-area-inset-top, 0px))',
         right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
       }}
       title="Help / 도움말"
