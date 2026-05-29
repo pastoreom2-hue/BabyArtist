@@ -8,32 +8,32 @@ const VARIANT_STYLES: Record<
   { active: string; inactive: string; iconActive: string; iconInactive: string }
 > = {
   draw: {
-    active: 'bg-pink-500 border-pink-500 text-white shadow-md',
-    inactive: 'bg-white border-pink-200 text-pink-600 hover:bg-pink-50 hover:border-pink-300',
+    active: 'bg-pink-500 text-white border-pink-500 shadow-sm',
+    inactive: 'bg-white text-stone-600 border-stone-200 hover:border-pink-200 hover:text-pink-600',
     iconActive: 'text-white',
-    iconInactive: 'text-pink-500',
+    iconInactive: 'text-pink-400',
   },
   gallery: {
-    active: 'bg-emerald-500 border-emerald-500 text-white shadow-md',
-    inactive: 'bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300',
+    active: 'bg-emerald-500 text-white border-emerald-500 shadow-sm',
+    inactive: 'bg-white text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600',
     iconActive: 'text-white',
-    iconInactive: 'text-emerald-500',
+    iconInactive: 'text-emerald-400',
   },
   upload: {
-    active: 'bg-sky-500 border-sky-500 text-white shadow-md',
-    inactive: 'bg-white border-sky-200 text-sky-600 hover:bg-sky-50 hover:border-sky-300',
+    active: 'bg-sky-500 text-white border-sky-500 shadow-sm',
+    inactive: 'bg-white text-stone-600 border-stone-200 hover:border-sky-200 hover:text-sky-600',
     iconActive: 'text-white',
-    iconInactive: 'text-sky-500',
+    iconInactive: 'text-sky-400',
   },
 };
 
+/** Shared pill nav button — horizontal icon + label */
 export const NAV_BTN_BASE =
-  'flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-2 rounded-xl font-black text-[11px] sm:text-xs border-2 transition-all select-none w-full shadow-sm';
+  'inline-flex flex-row items-center justify-center gap-2 sm:gap-3 min-h-[3rem] sm:min-h-[3.25rem] px-5 sm:px-7 py-2.5 sm:py-3 rounded-full font-bold text-base sm:text-lg border transition-all select-none whitespace-nowrap w-full';
 
 interface NavBarButtonProps {
   icon: LucideIcon;
   label: string;
-  shortLabel?: string;
   variant: NavVariant;
   isActive?: boolean;
   onClick?: () => void;
@@ -45,7 +45,6 @@ interface NavBarButtonProps {
 export const NavBarButton: React.FC<NavBarButtonProps> = ({
   icon: Icon,
   label,
-  shortLabel,
   variant,
   isActive = false,
   onClick,
@@ -65,11 +64,8 @@ export const NavBarButton: React.FC<NavBarButtonProps> = ({
       data-nav-btn=""
       className={`${NAV_BTN_BASE} ${stateClass} ${className}`}
     >
-      <Icon size={16} className={`flex-shrink-0 sm:w-[18px] sm:h-[18px] ${iconClass}`} strokeWidth={2.5} />
-      <span className="leading-tight text-center w-full truncate px-0.5">
-        <span className="md:hidden">{shortLabel ?? label}</span>
-        <span className="hidden md:inline">{label}</span>
-      </span>
+      <Icon size={20} className={`flex-shrink-0 sm:w-[22px] sm:h-[22px] ${iconClass}`} strokeWidth={2.5} />
+      <span>{label}</span>
     </button>
   );
 };
@@ -77,18 +73,15 @@ export const NavBarButton: React.FC<NavBarButtonProps> = ({
 interface NavBarLabelButtonProps {
   icon: LucideIcon;
   label: string;
-  shortLabel?: string;
   variant: NavVariant;
   className?: string;
   'data-tour'?: string;
   children: React.ReactNode;
 }
 
-/** Same look as NavBarButton but renders as <label> for file inputs */
 export const NavBarLabelButton: React.FC<NavBarLabelButtonProps> = ({
   icon: Icon,
   label,
-  shortLabel,
   variant,
   className = '',
   'data-tour': dataTour,
@@ -102,11 +95,8 @@ export const NavBarLabelButton: React.FC<NavBarLabelButtonProps> = ({
       data-nav-btn=""
       className={`${NAV_BTN_BASE} ${styles.inactive} cursor-pointer ${className}`}
     >
-      <Icon size={16} className={`flex-shrink-0 sm:w-[18px] sm:h-[18px] ${styles.iconInactive}`} strokeWidth={2.5} />
-      <span className="leading-tight text-center w-full truncate px-0.5">
-        <span className="md:hidden">{shortLabel ?? label}</span>
-        <span className="hidden md:inline">{label}</span>
-      </span>
+      <Icon size={20} className={`flex-shrink-0 sm:w-[22px] sm:h-[22px] ${styles.iconInactive}`} strokeWidth={2.5} />
+      <span>{label}</span>
       {children}
     </label>
   );

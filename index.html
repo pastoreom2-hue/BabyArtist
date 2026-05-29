@@ -11,11 +11,20 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
     <link rel="manifest" href="/manifest.json">
     <script>
-      // iOS Safari overscroll/bounce prevention
+      // iOS Safari overscroll/bounce prevention — allow scroll inside modals
       document.addEventListener('touchmove', function(e) {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-          e.preventDefault();
+        var tag = e.target && e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        var el = e.target;
+        while (el && el !== document.body) {
+          if (el.classList && el.classList.contains('help-modal-scroll')) return;
+          var style = window.getComputedStyle(el);
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+            return;
+          }
+          el = el.parentElement;
         }
+        e.preventDefault();
       }, { passive: false });
     </script>
     <title>BabyArtist</title>

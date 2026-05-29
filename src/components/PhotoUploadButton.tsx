@@ -46,7 +46,6 @@ export const PhotoUploadButton: React.FC<PhotoUploadButtonProps> = ({
       <NavBarLabelButton
         icon={Camera}
         label="Upload Drawing"
-        shortLabel="Upload"
         variant="upload"
         data-tour="tour-step-1"
         className={className}

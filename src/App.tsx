@@ -12,13 +12,14 @@ import { FramedArtwork } from './components/FramedArtwork';
 import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { OnboardingTour } from './components/OnboardingTour';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
-import { HelpModal, HelpFab } from './components/HelpModal';
+import { HelpModal } from './components/HelpModal';
+import { HeaderIconButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { AppNavBar } from './components/AppNavBar';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
-import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Volume2, VolumeX, Star, X, Share2, Trophy, Eye, EyeOff, Pen } from 'lucide-react';
+import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Star, X, Share2, Trophy, Pen, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const NURSERY_RHYMES = [
@@ -324,56 +325,62 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-yellow-50 font-sans text-gray-800">
-      {/* Header - Hidden in Fullscreen to maximize canvas space */}
-      <header className={`bg-white shadow-md sticky top-0 z-[100] ${isFullscreen ? 'hidden' : ''}`}>
-        <div className="max-w-7xl mx-auto flex justify-between items-center gap-3 p-3 sm:p-4">
-          <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+    <div className="min-h-screen bg-stone-50 font-sans text-stone-800 text-[17px] sm:text-lg">
+      <header
+        className={`bg-white/95 backdrop-blur-sm sticky top-0 z-[100] border-b border-stone-200/70 shadow-sm ${isFullscreen ? 'hidden' : ''}`}
+        style={{ ['--app-header-h' as string]: '8rem' }}
+      >
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="p-1.5 sm:p-2 bg-pink-500 rounded-lg sm:rounded-xl text-white flex-shrink-0">
-              <Palette className="w-6 h-6 sm:w-8 sm:h-8" />
+              <Palette className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2.25} />
             </div>
-            <h1 className="text-lg sm:text-3xl font-black text-pink-500 tracking-tight truncate">
+            <h1 className="text-2xl sm:text-3xl font-black text-pink-500 tracking-tight truncate">
               BabyArtist
-              <span className="ml-1 sm:ml-2 text-xs sm:text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent hidden sm:inline">
-                - 우리 아이 그림판
-              </span>
             </h1>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <button
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+            <HeaderIconButton
+              icon={Music}
               onClick={toggleMusic}
-              className={`p-2 sm:p-3 rounded-full transition-all shadow-md flex items-center justify-center ${
-                isMusicPlaying ? 'bg-yellow-400 text-white' : 'bg-white text-amber-400 border-2 border-amber-100'
-              }`}
               title={isMusicPlaying ? 'Stop Music' : 'Play Music'}
-            >
-              <Music size={20} className={isMusicPlaying ? 'animate-bounce' : ''} />
-            </button>
-
+              active={isMusicPlaying}
+              activeClass="bg-amber-100 text-amber-600 border-amber-200 animate-pulse"
+              size="large"
+            />
+            <HeaderIconButton
+              icon={HelpCircle}
+              onClick={() => setIsHelpOpen(true)}
+              title="Help"
+              active={isHelpOpen}
+              activeClass="bg-pink-100 text-pink-600 border-pink-200"
+              size="large"
+            />
             {user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <>
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-pink-200 flex-shrink-0" referrerPolicy="no-referrer" />
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full border border-stone-200 flex-shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
                 ) : (
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 flex-shrink-0">
-                    <UserIcon size={18} />
+                  <div className="w-8 h-8 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500">
+                    <UserIcon size={15} />
                   </div>
                 )}
-                <button
-                  onClick={logOut}
-                  className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                  title="Logout"
-                >
-                  <LogOut size={18} />
-                </button>
-              </div>
+                <HeaderIconButton icon={LogOut} onClick={logOut} title="Logout" />
+              </>
             ) : (
               <button
+                type="button"
                 onClick={signIn}
-                className="flex items-center gap-1.5 px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg text-xs sm:text-sm whitespace-nowrap"
+                className="h-10 sm:h-11 px-4 sm:px-6 flex items-center gap-2 rounded-full bg-stone-800 text-white text-base sm:text-lg font-bold hover:bg-stone-700 transition-colors"
               >
-                <LogIn size={18} /> <span className="hidden sm:inline">Login</span>
+                <LogIn size={20} />
+                <span className="hidden sm:inline">Login</span>
               </button>
             )}
           </div>
@@ -387,7 +394,7 @@ export default function App() {
       </header>
 
       <main
-        className={`${isFullscreen ? 'fixed inset-0 z-[100] bg-white w-screen h-screen m-0 p-0 max-w-none' : 'max-w-7xl mx-auto p-4 sm:p-8'}`}
+        className={`${isFullscreen ? 'fixed inset-0 z-[100] bg-white w-screen h-screen m-0 p-0 max-w-none' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8'}`}
         style={{ paddingBottom: isFullscreen ? undefined : adBannerOffset }}
       >
         <AnimatePresence mode="wait">
@@ -404,7 +411,7 @@ export default function App() {
                 className={`flex flex-col ${
                   isFullscreen 
                     ? 'bg-white !fixed !inset-0 !left-0 !top-0 !w-screen !h-screen overflow-hidden z-[102] m-0 p-0 touch-none select-none' 
-                    : 'gap-4 sm:gap-6'
+                    : 'gap-5 sm:gap-6'
                 }`}
                 style={isFullscreen ? { height: '100dvh', width: '100vw' } : {}}
               >
@@ -492,32 +499,35 @@ export default function App() {
 
                 {/* Activity and Fullscreen Controls */}
                 {!isFullscreen && (
-                  <div className="flex items-center justify-between gap-2 sm:gap-4 overflow-hidden">
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <ActivitySelector 
-                        activeActivity={activeActivity} 
-                        onActivityChange={setActiveActivity} 
-                        activeLevel={activeLevel}
-                        onLevelChange={setActiveLevel}
-                        onShowChallenge={() => setIsChallengeOpen(true)}
-                      />
+                  <section className="rounded-2xl border border-stone-200/80 bg-stone-100/40 px-3 py-3 sm:px-4 sm:py-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <ActivitySelector
+                          activeActivity={activeActivity}
+                          onActivityChange={setActiveActivity}
+                          activeLevel={activeLevel}
+                          onLevelChange={setActiveLevel}
+                          onShowChallenge={() => setIsChallengeOpen(true)}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="flex-shrink-0 inline-flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-white border border-stone-200 text-stone-600 text-sm sm:text-base font-bold hover:border-stone-300 hover:bg-stone-50 transition-all"
+                        title="Fullscreen Art Mode"
+                      >
+                        <Maximize2 size={18} />
+                        <span className="hidden sm:inline">Fullscreen</span>
+                      </button>
                     </div>
-                    <button
-                      onClick={toggleFullscreen}
-                      className="flex-shrink-0 flex items-center justify-center p-3 sm:p-4 bg-white border-2 border-blue-200 rounded-xl sm:rounded-2xl font-bold text-blue-500 hover:bg-blue-50 transition-all shadow-md"
-                      title="Fullscreen Art Mode"
-                    >
-                      <Maximize2 size={24} />
-                      <span className="hidden sm:inline ml-2">Fullscreen</span>
-                    </button>
-                  </div>
+                  </section>
                 )}
 
                 {/* Main Content Areas */}
-                <div className={`flex-1 relative ${isFullscreen ? 'h-full w-full' : 'grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8'}`}>
+                <div className={`flex-1 relative ${isFullscreen ? 'h-full w-full' : 'grid grid-cols-1 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8'}`}>
                   {!isFullscreen && (
-                    <div className="lg:col-span-1 order-2 lg:order-1 flex flex-col sm:flex-row lg:flex-col gap-4">
-                      <div className="flex-1">
+                    <div className="lg:col-span-1 order-2 lg:order-1 flex flex-col gap-4">
+                      <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm">
                         <Toolbar
                           currentColor={currentColor}
                           onColorChange={setCurrentColor}
@@ -529,19 +539,22 @@ export default function App() {
                           onStickerChange={setSelectedSticker}
                         />
                       </div>
-                      
-                      <div className="p-4 sm:p-6 bg-white rounded-3xl shadow-lg border-4 border-pink-400 hidden lg:block">
-                        <h3 className="text-base sm:text-lg font-bold text-pink-600 flex items-center gap-2 mb-2">
-                          <Heart size={20} /> Fun Tip!
+
+                      <div className="hidden lg:block rounded-2xl border border-stone-200/80 bg-stone-50 p-4">
+                        <h3 className="text-sm font-semibold text-stone-700 flex items-center gap-2 mb-2">
+                          <Heart size={16} className="text-pink-400" /> Tip
                         </h3>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          {activeTool === 'sticker' ? "Pick a sticker and tap the canvas to place it!" : "Draw anything you want! use magic colors!"}
+                        <p className="text-xs text-stone-500 leading-relaxed">
+                          {activeTool === 'sticker'
+                            ? 'Pick a sticker and tap the canvas to place it!'
+                            : 'Draw anything you want — use magic colors!'}
                         </p>
                       </div>
                     </div>
                   )}
 
-                  <div className={`${isFullscreen ? 'h-full w-full absolute inset-0' : 'lg:col-span-3 order-1 lg:order-2 h-[50vh] landscape:h-[70vh] sm:h-[60vh] lg:h-auto'} relative`}>
+                  <div className={`${isFullscreen ? 'h-full w-full absolute inset-0' : 'lg:col-span-3 order-1 lg:order-2 h-[50vh] landscape:h-[70vh] sm:h-[58vh] lg:h-auto'} relative`}>
+                    <div className={`h-full ${isFullscreen ? '' : 'rounded-2xl border border-stone-200/80 bg-white p-2 sm:p-3 shadow-sm'}`}>
                     <DrawingCanvas
                       color={currentColor}
                       brushSize={brushSize}
@@ -553,6 +566,7 @@ export default function App() {
                       isFullscreen={isFullscreen}
                       onColorChange={setCurrentColor}
                     />
+                    </div>
 
                     {/* Daily Challenge Modal - Centered over the Whiteboard */}
                     <AnimatePresence>
@@ -636,16 +650,16 @@ export default function App() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-black text-purple-600 flex items-center gap-3">
-                  <ImageIcon size={32} /> Your Gallery
+              <div className="flex justify-between items-center mb-5 pb-4 border-b border-stone-200/80">
+                <h2 className="text-lg sm:text-xl font-bold text-stone-800">
+                  Your Gallery
                 </h2>
-                <p className="text-gray-500 font-bold">
-                  {savedArt.length + artworks.length} Masterpieces
+                <p className="text-xs sm:text-sm text-stone-400 font-medium">
+                  {savedArt.length + artworks.length} pieces
                 </p>
               </div>
 
-              <div className="sticky top-[4.5rem] z-40 mb-4">
+              <div className="sticky z-40 mb-6" style={{ top: 'var(--app-header-h, 6.25rem)' }}>
                 <FrameSelector selectedFrame={selectedFrame} onSelect={setSelectedFrame} />
               </div>
 
@@ -692,7 +706,7 @@ export default function App() {
                               className="w-full aspect-square rounded-lg"
                             />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2 rounded-lg">
-                              <p className="text-white text-[10px] font-bold text-center">액자 · SNS 공유</p>
+                              <p className="text-white text-[10px] font-medium text-center">Frame · Share</p>
                               <ArtworkShareActions
                                 dataUrl={art}
                                 title={`Masterpiece ${i + 1}`}
@@ -705,7 +719,7 @@ export default function App() {
                                   localStorage.setItem('colorjoy-art', JSON.stringify(newArt));
                                 }}
                                 className="p-2 bg-red-500 text-white rounded-full border-2 border-slate-800 shadow-md text-xs font-bold"
-                                title="삭제"
+                                title="Delete"
                               >
                                 <X size={14} />
                               </button>
@@ -764,7 +778,6 @@ export default function App() {
         onChangeView={setView}
       />
 
-      <HelpFab onClick={() => setIsHelpOpen(true)} hidden={isFullscreen} />
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
 
       <AdMobBanner hidden={isFullscreen} />

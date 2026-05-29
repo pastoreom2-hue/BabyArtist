@@ -21,15 +21,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   selectedSticker, onStickerChange, activeTool, onToolChange
 }) => {
   return (
-    <div className="flex flex-col gap-2 sm:gap-6 p-2 sm:p-6 bg-white border-4 border-pink-400 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-xl">
+    <div className="flex flex-col gap-3 p-1 sm:p-2">
       {/* Tool Selection */}
       <div className="flex gap-1.5 sm:gap-2">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onToolChange('pen')}
-          className={`flex-1 py-1.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-4 font-black uppercase text-[9px] sm:text-xs flex flex-col items-center gap-0.5 sm:gap-1 transition-all ${
-            activeTool === 'pen' ? 'bg-pink-500 border-pink-600 text-white shadow-lg' : 'bg-pink-50 border-pink-100 text-pink-400'
+          className={`flex-1 py-2 rounded-full border font-semibold uppercase text-[10px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
+            activeTool === 'pen' ? 'bg-stone-800 border-stone-800 text-white' : 'bg-stone-50 border-stone-200 text-stone-500'
           }`}
         >
           <Pen size={16} className="sm:w-5 sm:h-5" />
@@ -40,8 +40,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => onToolChange('sticker')}
-          className={`flex-1 py-1.5 sm:py-3 rounded-xl sm:rounded-2xl border-2 sm:border-4 font-black uppercase text-[9px] sm:text-xs flex flex-col items-center gap-0.5 sm:gap-1 transition-all ${
-            activeTool === 'sticker' ? 'bg-yellow-400 border-yellow-500 text-white shadow-lg' : 'bg-yellow-50 border-yellow-100 text-yellow-600'
+          className={`flex-1 py-2 rounded-full border font-semibold uppercase text-[10px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
+            activeTool === 'sticker' ? 'bg-amber-400 border-amber-500 text-white' : 'bg-stone-50 border-stone-200 text-stone-500'
           }`}
         >
           <Sparkles size={16} className="sm:w-5 sm:h-5" />

@@ -63,8 +63,8 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
             text: 'For Shape Match and Color by Number, tap the **Lvl** number buttons below the activity bar. Level 1 is gentle, Level 3 is a bigger challenge!',
           },
           {
-            label: 'Fun Stickers',
-            text: 'In the left toolbar, tap **Stickers**, choose a cute sticker, then tap anywhere on the canvas to place it!',
+            label: 'Stickers',
+            text: 'In the left toolbar, tap **Stickers**, choose a cute sticker, then tap anywhere on the canvas to place it! **Stickers are special rewards!** Moms can give these to their little artists as a "prize" to encourage their creativity and hard work.',
           },
         ],
       },
@@ -175,8 +175,8 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
             text: 'Shape Match와 Color by Number에서는 활동 버튼 **아래 Lvl 숫자**를 눌러 난이도를 바꿔요. 1은 쉬움, 3은 도전!',
           },
           {
-            label: '스티커 붙이기',
-            text: '왼쪽 도구에서 **Stickers**를 누르고 마음에 드는 스티커를 고른 뒤, 캔버스 아무 곳이나 터치하면 붙어요!',
+            label: '스티커',
+            text: '왼쪽 도구에서 **Stickers**를 누르고 마음에 드는 스티커를 고른 뒤, 캔버스 아무 곳이나 터치하면 붙어요! **스티커는 우리 아이를 위한 특별한 상입니다!** 엄마가 아이의 멋진 작품 활동을 격려하고 칭찬해 주기 위해 주는 선물로 활용해 보세요.',
           },
         ],
       },

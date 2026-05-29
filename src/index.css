@@ -21,7 +21,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-yellow-400 text-slate-900 font-sans selection:bg-pink-300;
+    @apply bg-stone-50 text-slate-900 font-sans selection:bg-pink-200;
     overflow: hidden;
   }
   #root {
@@ -43,6 +43,11 @@
 
 .canvas-container {
   touch-action: none;
+}
+
+.help-modal-scroll {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes bounce-subtle {
