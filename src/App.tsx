@@ -326,7 +326,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-yellow-50 font-sans text-gray-800">
       {/* Header - Hidden in Fullscreen to maximize canvas space */}
-      <header className={`bg-white shadow-md sticky top-0 z-50 ${isFullscreen ? 'hidden' : ''}`}>
+      <header className={`bg-white shadow-md sticky top-0 z-[100] ${isFullscreen ? 'hidden' : ''}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-3 p-3 sm:p-4">
           <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
             <div className="p-1.5 sm:p-2 bg-pink-500 rounded-lg sm:rounded-xl text-white flex-shrink-0">

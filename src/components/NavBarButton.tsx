@@ -28,7 +28,7 @@ const VARIANT_STYLES: Record<
 };
 
 export const NAV_BTN_BASE =
-  'inline-flex flex-col items-center justify-center gap-0.5 px-1.5 sm:px-3 py-1.5 sm:py-2 rounded-xl font-black text-[10px] sm:text-xs border-2 transition-all select-none w-full';
+  'flex flex-col items-center justify-center gap-1 px-2 sm:px-3 py-2 rounded-xl font-black text-[11px] sm:text-xs border-2 transition-all select-none w-full shadow-sm';
 
 interface NavBarButtonProps {
   icon: LucideIcon;
@@ -62,6 +62,7 @@ export const NavBarButton: React.FC<NavBarButtonProps> = ({
       type={type}
       onClick={onClick}
       data-tour={dataTour}
+      data-nav-btn=""
       className={`${NAV_BTN_BASE} ${stateClass} ${className}`}
     >
       <Icon size={16} className={`flex-shrink-0 sm:w-[18px] sm:h-[18px] ${iconClass}`} strokeWidth={2.5} />
@@ -98,6 +99,7 @@ export const NavBarLabelButton: React.FC<NavBarLabelButtonProps> = ({
   return (
     <label
       data-tour={dataTour}
+      data-nav-btn=""
       className={`${NAV_BTN_BASE} ${styles.inactive} cursor-pointer ${className}`}
     >
       <Icon size={16} className={`flex-shrink-0 sm:w-[18px] sm:h-[18px] ${styles.iconInactive}`} strokeWidth={2.5} />

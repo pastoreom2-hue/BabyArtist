@@ -10,11 +10,25 @@ View your app in AI Studio: https://ai.studio/apps/22a16833-2c23-4e4f-8c31-15295
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Important (Windows):** The app code is in the `babyartist_-kids'-creative-studio` folder.
 
+**Option A — from parent `BabyArtist` folder:**
+```bash
+npm run install:app   # first time only
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+**Option B — from app folder:**
+```bash
+cd babyartist_-kids'-creative-studio
+npm install
+npm run dev
+```
+
+**Option C — double-click `start-dev.bat`** inside `babyartist_-kids'-creative-studio`
+
+Open **http://localhost:3000** — you should see **Draw · Upload · Gallery** buttons in a row below the BabyArtist logo.
+
+## Deploy (Vercel)
+
+Production URL is set in your Vercel project dashboard. After `git push`, wait ~1–2 min and hard-refresh (Ctrl+Shift+R).

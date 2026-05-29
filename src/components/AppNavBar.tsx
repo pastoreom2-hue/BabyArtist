@@ -9,15 +9,21 @@ interface AppNavBarProps {
   onPhotoUpload: (dataUrl: string) => void;
 }
 
-/** Full-width row: Start Drawing · Upload · Gallery */
+/** Full-width row: Start Drawing · Upload · Gallery — always visible below logo */
 export const AppNavBar: React.FC<AppNavBarProps> = ({
   view,
   onViewChange,
   onPhotoUpload,
 }) => (
-  <div className="w-full px-3 pb-3 sm:px-4 sm:pb-4 border-t border-slate-100 bg-white/80">
+  <nav
+    aria-label="Main menu"
+    className="w-full px-3 pb-3 pt-2 sm:px-4 sm:pb-4 border-t-2 border-pink-100 bg-gradient-to-r from-pink-50 via-white to-emerald-50 shadow-sm"
+  >
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-stretch gap-1.5 sm:gap-2 w-full">
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mb-2 sm:hidden">
+        Menu
+      </p>
+      <div className="flex items-stretch gap-2 w-full">
         <NavBarButton
           icon={PencilLine}
           label="Start Drawing"
@@ -25,12 +31,12 @@ export const AppNavBar: React.FC<AppNavBarProps> = ({
           variant="draw"
           isActive={view === 'draw'}
           onClick={() => onViewChange('draw')}
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 min-h-[3.25rem]"
         />
         <PhotoUploadButton
           onUpload={onPhotoUpload}
           variant="nav"
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 min-h-[3.25rem]"
         />
         <NavBarButton
           icon={ImageIcon}
@@ -39,9 +45,9 @@ export const AppNavBar: React.FC<AppNavBarProps> = ({
           variant="gallery"
           isActive={view === 'gallery'}
           onClick={() => onViewChange('gallery')}
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 min-h-[3.25rem]"
         />
       </div>
     </div>
-  </div>
+  </nav>
 );

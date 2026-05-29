@@ -10,18 +10,25 @@
 }
 
 @layer base {
+  html {
+    height: 100%;
+  }
   html, body {
-    @apply w-full m-0 p-0 overflow-hidden fixed inset-0;
-    height: 100vh;
+    @apply w-full m-0 p-0;
+    height: 100%;
     height: -webkit-fill-available;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    user-select: none;
-    touch-action: none;
   }
   body {
     @apply bg-yellow-400 text-slate-900 font-sans selection:bg-pink-300;
+    overflow: hidden;
+  }
+  #root {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .font-korean {
     font-family: var(--font-korean);
@@ -53,12 +60,16 @@
   header {
     padding: 0.15rem 0.5rem !important;
   }
-  header h1, 
-  header .hidden.xs\:inline,
+  header h1,
+  header .hidden.sm\:inline,
   header .hidden.lg\:inline,
-  header nav button span,
   header p {
     display: none !important;
+  }
+  /* Keep main nav buttons visible in landscape */
+  header nav [data-nav-btn] span {
+    display: inline !important;
+    font-size: 9px !important;
   }
   header .max-w-7xl {
     gap: 0.25rem !important;
