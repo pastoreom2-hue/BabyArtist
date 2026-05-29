@@ -499,7 +499,7 @@ export default function App() {
 
                 {/* Activity and Fullscreen Controls */}
                 {!isFullscreen && (
-                  <section className="rounded-2xl border border-stone-200/80 bg-stone-100/40 px-3 py-3 sm:px-4 sm:py-3.5">
+                  <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-lime-50/80 px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <ActivitySelector
