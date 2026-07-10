@@ -16,9 +16,19 @@ interface DrawingCanvasProps {
   onColorChange?: (color: string) => void;
 }
 
-export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ 
-  color, 
-  brushSize, 
+const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, 2);
+
+const getPointerCoordinates = (canvas: HTMLCanvasElement, e: PointerEvent) => {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    offsetX: e.clientX - rect.left,
+    offsetY: e.clientY - rect.top,
+  };
+};
+
+export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
+  color,
+  brushSize,
   onSave,
   activityType,
   level,
@@ -29,16 +39,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const templateRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const pixelRatioRef = useRef(getPixelRatio());
   const [isDrawing, setIsDrawing] = useState(false);
   const isDrawingRef = useRef(false);
 
-  // Use refs for configuration to avoid re-binding native listeners and to ensures latest values are used
   const configRef = useRef({ color, brushSize, activeTool, selectedSticker });
-  
+
   useEffect(() => {
     configRef.current = { color, brushSize, activeTool, selectedSticker };
-    // Also apply to context immediately if drawing is already in progress
     if (isDrawingRef.current && contextRef.current) {
       contextRef.current.strokeStyle = color;
       contextRef.current.lineWidth = brushSize;
@@ -48,18 +58,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   useEffect(() => {
     isDrawingRef.current = isDrawing;
   }, [isDrawing]);
-
-  const resetDrawingCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    canvas.width = canvas.width;
-    ctx.scale(2, 2);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    contextRef.current = ctx;
-  }, []);
 
   const drawTemplate = useCallback(() => {
     const template = templateRef.current;
@@ -81,163 +79,192 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     drawActivityTemplate(ctx, activityType, level, width, height);
   }, [activityType, level]);
 
-  useEffect(() => {
-    resetDrawingCanvas();
-    drawTemplate();
-  }, [activityType, level, resetDrawingCanvas, drawTemplate]);
+  const applyCanvasDimensions = useCallback(
+    (width: number, height: number, preserveDrawing = true) => {
+      const canvas = canvasRef.current;
+      const template = templateRef.current;
+      if (!canvas || !template || width <= 0 || height <= 0) return;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const template = templateRef.current;
-    if (!canvas || !template) return;
+      const ratio = pixelRatioRef.current;
+      let snapshot: HTMLCanvasElement | null = null;
 
-    const handleResize = () => {
-      const parent = canvas.parentElement;
-      if (parent) {
-        const width = parent.clientWidth;
-        const height = parent.clientHeight;
-        
-        [canvas, template].forEach(c => {
-          c.width = width * 2;
-          c.height = height * 2;
-          c.style.width = `${width}px`;
-          c.style.height = `${height}px`;
-        });
-
-        const context = canvas.getContext('2d');
-        if (context) {
-          context.scale(2, 2);
-          context.lineCap = 'round';
-          context.lineJoin = 'round';
-          contextRef.current = context;
-        }
-        drawTemplate();
+      if (preserveDrawing && canvas.width > 0 && canvas.height > 0) {
+        snapshot = document.createElement('canvas');
+        snapshot.width = canvas.width;
+        snapshot.height = canvas.height;
+        snapshot.getContext('2d')?.drawImage(canvas, 0, 0);
       }
-    };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
+      [canvas, template].forEach((target) => {
+        target.width = Math.round(width * ratio);
+        target.height = Math.round(height * ratio);
+        target.style.width = `${width}px`;
+        target.style.height = `${height}px`;
+      });
 
-    const onTouchStartNative = (e: TouchEvent) => {
-      if (e.cancelable) e.preventDefault();
-      handleInteraction(e as any);
-    };
-    const onTouchMoveNative = (e: TouchEvent) => {
-      if (e.cancelable) e.preventDefault();
-      draw(e as any);
-    };
-    const onTouchEndNative = (e: TouchEvent) => {
-      stopDrawing();
-    };
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.scale(ratio, ratio);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        contextRef.current = context;
 
-    canvas.addEventListener('touchstart', onTouchStartNative, { passive: false });
-    canvas.addEventListener('touchmove', onTouchMoveNative, { passive: false });
-    canvas.addEventListener('touchend', onTouchEndNative, { passive: false });
+        if (snapshot) {
+          context.drawImage(snapshot, 0, 0, snapshot.width, snapshot.height, 0, 0, width, height);
+        }
+      }
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      canvas.removeEventListener('touchstart', onTouchStartNative);
-      canvas.removeEventListener('touchmove', onTouchMoveNative);
-      canvas.removeEventListener('touchend', onTouchEndNative);
-    };
-  }, [activityType, level, isFullscreen, drawTemplate, resetDrawingCanvas]);
+      const templateCtx = template.getContext('2d');
+      if (templateCtx) {
+        templateCtx.setTransform(1, 0, 0, 1, 0, 0);
+        templateCtx.scale(ratio, ratio);
+      }
 
-  const handleInteraction = (e: any) => {
-    if (e.cancelable) e.preventDefault();
-    if (configRef.current.activeTool === 'sticker') {
-      placeSticker(e);
-    } else {
-      startDrawing(e);
-    }
-  };
+      drawTemplate();
+    },
+    [drawTemplate],
+  );
 
-  const placeSticker = (e: any) => {
-    if (e.cancelable) e.preventDefault();
-    const { activeTool, selectedSticker } = configRef.current;
-    if (!selectedSticker || !contextRef.current) return;
-    const { offsetX, offsetY } = getCoordinates(e);
-    
+  const resetDrawingCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const parent = canvas.parentElement;
+    if (!parent) return;
+    applyCanvasDimensions(parent.clientWidth, parent.clientHeight, false);
+  }, [applyCanvasDimensions]);
+
+  const placeSticker = useCallback((e: PointerEvent) => {
+    const { activeTool, selectedSticker: sticker } = configRef.current;
+    if (activeTool !== 'sticker' || !sticker || !contextRef.current || !canvasRef.current) return;
+
+    const { offsetX, offsetY } = getPointerCoordinates(canvasRef.current, e);
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = selectedSticker.url;
+    img.crossOrigin = 'anonymous';
+    img.src = sticker.url;
     img.onload = () => {
       const size = 60;
-      contextRef.current?.drawImage(img, offsetX - size/2, offsetY - size/2, size, size);
+      contextRef.current?.drawImage(img, offsetX - size / 2, offsetY - size / 2, size, size);
     };
-  };
+  }, []);
 
-  const startDrawing = (e: any) => {
-    if (e.cancelable) e.preventDefault();
-    const { offsetX, offsetY } = getCoordinates(e);
-    const { color: currentSelectedColor, brushSize: currentSelectedSize } = configRef.current;
-
+  const startDrawing = useCallback((e: PointerEvent) => {
+    if (!canvasRef.current) return;
+    const { offsetX, offsetY } = getPointerCoordinates(canvasRef.current, e);
+    const { color: currentColor, brushSize: currentSize } = configRef.current;
     const ctx = contextRef.current;
+
     if (ctx) {
-      ctx.strokeStyle = currentSelectedColor;
-      ctx.lineWidth = currentSelectedSize;
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = currentSize;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.beginPath();
       ctx.moveTo(offsetX, offsetY);
     }
+
     isDrawingRef.current = true;
     setIsDrawing(true);
-  };
+  }, []);
 
-  const draw = (e: any) => {
-    if (e.cancelable) e.preventDefault();
-    const { activeTool, color: currentSelectedColor, brushSize: currentSelectedSize } = configRef.current;
-    
-    if (!isDrawingRef.current || activeTool === 'sticker') return;
-    
-    const { offsetX, offsetY } = getCoordinates(e);
+  const draw = useCallback((e: PointerEvent) => {
+    if (!isDrawingRef.current || !canvasRef.current) return;
+
+    const { activeTool, color: currentColor, brushSize: currentSize } = configRef.current;
+    if (activeTool === 'sticker') return;
+
+    const { offsetX, offsetY } = getPointerCoordinates(canvasRef.current, e);
     const ctx = contextRef.current;
-    
+
     if (ctx) {
-      // Re-apply style, width, and caps to be absolutely sure
-      ctx.strokeStyle = currentSelectedColor;
-      ctx.lineWidth = currentSelectedSize;
+      ctx.strokeStyle = currentColor;
+      ctx.lineWidth = currentSize;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.lineTo(offsetX, offsetY);
       ctx.stroke();
     }
-  };
+  }, []);
 
-  const stopDrawing = () => {
+  const stopDrawing = useCallback(() => {
     if (configRef.current.activeTool === 'pen') {
       contextRef.current?.closePath();
     }
     isDrawingRef.current = false;
     setIsDrawing(false);
-  };
+  }, []);
 
-  const getCoordinates = (e: any) => {
+  const handlePointerDown = useCallback(
+    (e: PointerEvent) => {
+      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
+      canvasRef.current?.setPointerCapture(e.pointerId);
+
+      if (configRef.current.activeTool === 'sticker') {
+        placeSticker(e);
+      } else {
+        startDrawing(e);
+      }
+    },
+    [placeSticker, startDrawing],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: PointerEvent) => {
+      if (!isDrawingRef.current) return;
+      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
+      draw(e);
+    },
+    [draw],
+  );
+
+  const handlePointerEnd = useCallback((e: PointerEvent) => {
     const canvas = canvasRef.current;
-    if (!canvas) return { offsetX: 0, offsetY: 0 };
-    const rect = canvas.getBoundingClientRect();
-    
-    // Support for both React synthetic events and native DOM events
-    const event = (e as any).nativeEvent || e;
-    
-    if (event instanceof MouseEvent) {
-      return { offsetX: event.offsetX, offsetY: event.offsetY };
-    } else if (event.touches && event.touches.length > 0) {
-      const touch = event.touches[0];
-      return {
-        offsetX: touch.clientX - rect.left,
-        offsetY: touch.clientY - rect.top
-      };
-    } else if (event.changedTouches && event.changedTouches.length > 0) {
-      const touch = event.changedTouches[0];
-      return {
-        offsetX: touch.clientX - rect.left,
-        offsetY: touch.clientY - rect.top
-      };
+    if (canvas?.hasPointerCapture(e.pointerId)) {
+      canvas.releasePointerCapture(e.pointerId);
     }
-    
-    return { offsetX: 0, offsetY: 0 };
-  };
+    stopDrawing();
+  }, [stopDrawing]);
+
+  useEffect(() => {
+    resetDrawingCanvas();
+  }, [activityType, level, resetDrawingCanvas]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const syncCanvasSize = (preserveDrawing = true) => {
+      pixelRatioRef.current = getPixelRatio();
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      applyCanvasDimensions(width, height, preserveDrawing);
+    };
+
+    syncCanvasSize(false);
+
+    const resizeObserver = new ResizeObserver(() => {
+      syncCanvasSize(true);
+    });
+    resizeObserver.observe(container);
+
+    const onWindowResize = () => syncCanvasSize(true);
+    window.addEventListener('resize', onWindowResize);
+
+    canvas.addEventListener('pointerdown', handlePointerDown);
+    canvas.addEventListener('pointermove', handlePointerMove);
+    canvas.addEventListener('pointerup', handlePointerEnd);
+    canvas.addEventListener('pointercancel', handlePointerEnd);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', onWindowResize);
+      canvas.removeEventListener('pointerdown', handlePointerDown);
+      canvas.removeEventListener('pointermove', handlePointerMove);
+      canvas.removeEventListener('pointerup', handlePointerEnd);
+      canvas.removeEventListener('pointercancel', handlePointerEnd);
+    };
+  }, [applyCanvasDimensions, handlePointerDown, handlePointerMove, handlePointerEnd, isFullscreen]);
 
   const handleClear = () => {
     resetDrawingCanvas();
@@ -254,20 +281,18 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 touch-none">
+    <div
+      ref={containerRef}
+      className="canvas-container w-full h-full relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 touch-none"
+    >
       <div className="absolute inset-2 sm:inset-4 border-[4px] sm:border-[10px] border-yellow-400 rounded-[0.8rem] sm:rounded-[1.2rem] pointer-events-none z-[998] shadow-sm" />
 
-      <canvas
-        ref={templateRef}
-        className="absolute inset-0 z-[5] pointer-events-none"
-      />
+      <canvas ref={templateRef} className="absolute inset-0 z-[5] pointer-events-none" />
       <canvas
         ref={canvasRef}
-        onMouseDown={handleInteraction}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        className={`absolute inset-0 z-10 touch-none ${activeTool === 'sticker' ? 'cursor-copy' : 'cursor-crosshair'}`}
+        className={`absolute inset-0 z-10 touch-none ${
+          activeTool === 'sticker' ? 'cursor-copy' : 'cursor-crosshair'
+        }`}
       />
 
       {isActivityMode && activityHint && (
@@ -291,7 +316,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                   key={number}
                   type="button"
                   onClick={() => onColorChange?.(value)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-pink-50 transition-colors"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-pink-50 transition-colors min-h-[44px] sm:min-h-0"
                   title={`Pick ${name} for #${number}`}
                 >
                   <span
@@ -313,7 +338,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleClear}
-          className="p-3 sm:p-4 lg:p-6 bg-white text-red-500 rounded-2xl sm:rounded-3xl shadow-2xl border-4 border-red-100 hover:bg-red-50 transition-all flex items-center justify-center ring-4 ring-white"
+          className="p-3 sm:p-4 lg:p-6 bg-white text-red-500 rounded-2xl sm:rounded-3xl shadow-2xl border-4 border-red-100 hover:bg-red-50 transition-all flex items-center justify-center ring-4 ring-white min-w-[44px] min-h-[44px]"
           title="Clear Canvas"
         >
           <Trash2 className="w-6 h-6 sm:w-8 sm:h-8" />
@@ -322,7 +347,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={handleSave}
-          className="p-3 sm:p-4 lg:p-6 bg-pink-500 text-white rounded-2xl sm:rounded-3xl shadow-2xl border-4 border-pink-600 hover:bg-pink-600 transition-all flex items-center justify-center ring-4 ring-white"
+          className="p-3 sm:p-4 lg:p-6 bg-pink-500 text-white rounded-2xl sm:rounded-3xl shadow-2xl border-4 border-pink-600 hover:bg-pink-600 transition-all flex items-center justify-center ring-4 ring-white min-w-[44px] min-h-[44px]"
           title="Save Masterpiece"
         >
           <Save className="w-6 h-6 sm:w-8 sm:h-8" />

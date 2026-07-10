@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { COLORS, STICKERS, Sticker } from '../types';
-import { Eraser, Pen, Trash2, Palette, Sparkles, MousePointer2 } from 'lucide-react';
+import { Pen, Palette, Sparkles } from 'lucide-react';
 
 interface ToolbarProps {
   currentColor: string;
@@ -17,85 +17,96 @@ interface ToolbarProps {
 const SIZES = [5, 10, 20, 40];
 
 export const Toolbar: React.FC<ToolbarProps> = ({
-  currentColor, onColorChange, brushSize, onBrushSizeChange,
-  selectedSticker, onStickerChange, activeTool, onToolChange
+  currentColor,
+  onColorChange,
+  brushSize,
+  onBrushSizeChange,
+  selectedSticker,
+  onStickerChange,
+  activeTool,
+  onToolChange,
 }) => {
   return (
-    <div className="flex flex-col gap-3 p-1 sm:p-2">
-      {/* Tool Selection */}
-      <div className="flex gap-1.5 sm:gap-2">
+    <div className="flex flex-col gap-3 sm:gap-4 p-1 sm:p-2">
+      <div className="grid grid-cols-2 gap-2">
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => onToolChange('pen')}
-          className={`flex-1 py-2 rounded-full border font-semibold uppercase text-[10px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
-            activeTool === 'pen' ? 'bg-stone-800 border-stone-800 text-white' : 'bg-stone-50 border-stone-200 text-stone-500'
+          className={`min-h-[44px] py-2.5 px-3 rounded-full border font-semibold uppercase text-[10px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
+            activeTool === 'pen'
+              ? 'bg-stone-800 border-stone-800 text-white shadow-sm'
+              : 'bg-stone-50 border-stone-200 text-stone-500 hover:bg-stone-100'
           }`}
         >
-          <Pen size={16} className="sm:w-5 sm:h-5" />
-          <span className="hidden sm:inline">Magic Pen</span>
-          <span className="sm:hidden text-[7px]">Pen</span>
+          <Pen size={16} className="sm:w-5 sm:h-5 shrink-0" />
+          <span className="hidden md:inline">Magic Pen</span>
+          <span className="md:hidden">Pen</span>
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => onToolChange('sticker')}
-          className={`flex-1 py-2 rounded-full border font-semibold uppercase text-[10px] sm:text-xs flex flex-col sm:flex-row items-center justify-center gap-1 transition-all ${
-            activeTool === 'sticker' ? 'bg-amber-400 border-amber-500 text-white' : 'bg-stone-50 border-stone-200 text-stone-500'
+          className={`min-h-[44px] py-2.5 px-3 rounded-full border font-semibold uppercase text-[10px] sm:text-xs flex items-center justify-center gap-1.5 transition-all ${
+            activeTool === 'sticker'
+              ? 'bg-amber-400 border-amber-500 text-white shadow-sm'
+              : 'bg-stone-50 border-stone-200 text-stone-500 hover:bg-stone-100'
           }`}
         >
-          <Sparkles size={16} className="sm:w-5 sm:h-5" />
-          <span className="hidden sm:inline">Stickers</span>
-          <span className="sm:hidden text-[7px]">Sticker</span>
+          <Sparkles size={16} className="sm:w-5 sm:h-5 shrink-0" />
+          <span className="hidden md:inline">Stickers</span>
+          <span className="md:hidden">Sticker</span>
         </motion.button>
       </div>
 
       {activeTool === 'pen' ? (
         <>
-          {/* Colors */}
-          <div className="space-y-1 sm:space-y-4">
-            <div className="flex items-center gap-1.5 sm:gap-2 text-pink-600 font-black uppercase tracking-wider text-[9px] sm:text-sm">
-              <Palette size={14} />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-pink-600 font-black uppercase tracking-wider text-[10px] sm:text-sm">
+              <Palette size={14} className="shrink-0" />
               <span>Colors</span>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-4 gap-1 sm:gap-3">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 gap-1.5 sm:gap-2 lg:gap-2.5">
               {COLORS.map((c) => (
                 <motion.button
                   key={c.value}
-                  whileHover={{ scale: 1.2, rotate: 5 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.12, rotate: 4 }}
+                  whileTap={{ scale: 0.92 }}
                   onClick={() => onColorChange(c.value)}
-                  className={`w-6 h-6 sm:w-10 sm:h-10 rounded-full border-2 sm:border-4 transition-all ${
-                    currentColor === c.value 
-                      ? 'border-pink-400 scale-110 shadow-lg' 
+                  className={`aspect-square w-full max-w-[2.75rem] sm:max-w-none sm:w-10 sm:h-10 lg:w-11 lg:h-11 mx-auto rounded-full border-2 sm:border-[3px] transition-all ${
+                    currentColor === c.value
+                      ? 'border-pink-400 scale-110 shadow-lg ring-2 ring-pink-200'
                       : 'border-gray-100 hover:border-pink-200'
                   }`}
                   style={{ backgroundColor: c.value }}
                   title={c.name}
+                  aria-label={c.name}
                 />
               ))}
             </div>
           </div>
 
-          {/* Brush Size */}
-          <div className="space-y-1 sm:space-y-4 pt-1.5 sm:pt-4 border-t-2 border-pink-50">
-            <div className="text-pink-600 font-black uppercase tracking-wider text-[9px] sm:text-sm">Size</div>
-            <div className="flex items-center justify-between gap-1.5 sm:gap-4">
+          <div className="space-y-2 sm:space-y-3 pt-2 sm:pt-3 border-t border-pink-100">
+            <div className="text-pink-600 font-black uppercase tracking-wider text-[10px] sm:text-sm">
+              Brush Size
+            </div>
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
               {SIZES.map((s) => (
                 <motion.button
                   key={s}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => onBrushSizeChange(s)}
-                  className={`flex-1 flex items-center justify-center h-8 sm:h-14 rounded-lg sm:rounded-2xl border-2 sm:border-4 transition-all ${
-                    brushSize === s 
-                      ? 'bg-pink-500 border-pink-600 text-white shadow-lg' 
+                  className={`min-h-[44px] sm:min-h-[3.25rem] flex items-center justify-center rounded-xl sm:rounded-2xl border-2 sm:border-[3px] transition-all ${
+                    brushSize === s
+                      ? 'bg-pink-500 border-pink-600 text-white shadow-md'
                       : 'bg-pink-50 border-pink-100 text-pink-300 hover:bg-pink-100'
                   }`}
+                  aria-label={`Brush size ${s}`}
                 >
-                  <div 
-                    className={`rounded-full bg-current transition-all ${brushSize === s ? 'scale-110' : ''}`} 
-                    style={{ width: Math.max(3, s/4), height: Math.max(3, s/4) }} 
+                  <div
+                    className={`rounded-full bg-current transition-all ${brushSize === s ? 'scale-110' : ''}`}
+                    style={{ width: Math.max(4, s / 3.5), height: Math.max(4, s / 3.5) }}
                   />
                 </motion.button>
               ))}
@@ -103,25 +114,31 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </div>
         </>
       ) : (
-        <div className="space-y-1 sm:space-y-4">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-yellow-600 font-black uppercase tracking-wider text-[9px] sm:text-sm">
-            <Sparkles size={14} />
-            <span>Stickers</span>
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-yellow-600 font-black uppercase tracking-wider text-[10px] sm:text-sm">
+            <Sparkles size={14} className="shrink-0" />
+            <span>Pick a Sticker</span>
           </div>
-          <div className="grid grid-cols-4 sm:grid-cols-4 gap-1.5 sm:gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2 max-h-[40vh] md:max-h-none overflow-y-auto scroll-region pr-0.5">
             {STICKERS.map((sticker) => (
               <motion.button
                 key={sticker.id}
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08, rotate: 3 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => onStickerChange(sticker)}
-                className={`p-1 sm:p-2 rounded-lg sm:rounded-2xl border-2 sm:border-4 transition-all ${
-                  selectedSticker?.id === sticker.id 
-                    ? 'bg-yellow-100 border-yellow-400 shadow-lg scale-110' 
+                className={`min-h-[44px] p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border-2 sm:border-[3px] transition-all ${
+                  selectedSticker?.id === sticker.id
+                    ? 'bg-yellow-100 border-yellow-400 shadow-md scale-105'
                     : 'bg-white border-gray-100 hover:border-yellow-200'
                 }`}
+                aria-label={sticker.name}
               >
-                <img src={sticker.url} alt={sticker.name} className="w-5 h-5 sm:w-8 sm:h-8 object-contain" referrerPolicy="no-referrer" />
+                <img
+                  src={sticker.url}
+                  alt={sticker.name}
+                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain mx-auto"
+                  referrerPolicy="no-referrer"
+                />
               </motion.button>
             ))}
           </div>
