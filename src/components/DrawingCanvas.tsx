@@ -283,9 +283,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className="canvas-container w-full h-full relative bg-white rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 touch-none"
+      className={`canvas-container w-full h-full relative touch-none ${
+        isFullscreen
+          ? 'fs-canvas-inner bg-white'
+          : 'rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 bg-white'
+      }`}
     >
-      <div className="absolute inset-2 sm:inset-4 border-[4px] sm:border-[10px] border-yellow-400 rounded-[0.8rem] sm:rounded-[1.2rem] pointer-events-none z-[998] shadow-sm" />
+      {!isFullscreen && (
+        <div className="canvas-golden-frame absolute inset-2 sm:inset-4 border-[4px] sm:border-[10px] border-yellow-400 rounded-[0.8rem] sm:rounded-[1.2rem] pointer-events-none z-[998] shadow-sm" />
+      )}
 
       <canvas ref={templateRef} className="absolute inset-0 z-[5] pointer-events-none" />
       <canvas
@@ -296,7 +302,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       />
 
       {isActivityMode && activityHint && (
-        <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-[999] pointer-events-none">
+        <div
+          className={`absolute z-[999] pointer-events-none ${
+            isFullscreen
+              ? 'fs-activity-hint'
+              : 'top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4'
+          }`}
+        >
           <div className="bg-white/95 backdrop-blur-sm border-2 border-blue-200 rounded-xl px-3 py-2 shadow-md max-w-md">
             <p className="text-[10px] sm:text-xs font-black text-blue-700 uppercase tracking-wide mb-0.5">
               {activityType === 'color-by-number' ? 'Color by Number' : 'Shape Match'} · Lvl {level}
@@ -307,7 +319,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       )}
 
       {colorLegend.length > 0 && (
-        <div className="absolute bottom-24 left-3 sm:bottom-28 sm:left-4 z-[999] pointer-events-auto">
+        <div
+          className={`absolute z-[999] pointer-events-auto ${
+            isFullscreen ? 'fs-color-legend' : 'bottom-24 left-3 sm:bottom-28 sm:left-4'
+          }`}
+        >
           <div className="bg-white/95 backdrop-blur-sm border-2 border-pink-200 rounded-xl p-2 shadow-lg">
             <p className="text-[9px] font-black text-pink-600 uppercase mb-1.5 px-1">Color Guide</p>
             <div className="flex flex-wrap gap-1 max-w-[10rem] sm:max-w-none">
@@ -333,7 +349,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </div>
       )}
 
-      <div className="absolute bottom-6 right-6 sm:bottom-12 sm:right-12 lg:bottom-16 lg:right-16 z-[999] flex gap-2 sm:gap-4 pointer-events-auto">
+      <div
+        className={`absolute z-[999] flex gap-2 sm:gap-4 pointer-events-auto ${
+          isFullscreen
+            ? 'fs-canvas-actions'
+            : 'bottom-6 right-6 sm:bottom-12 sm:right-12 lg:bottom-16 lg:right-16'
+        }`}
+        data-testid="fs-canvas-actions"
+      >
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}

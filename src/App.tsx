@@ -439,94 +439,11 @@ export default function App() {
                 ref={drawingAreaRef}
                 className={`flex flex-col ${
                   isFullscreen 
-                    ? 'bg-white !fixed !inset-0 !left-0 !top-0 !w-screen !h-screen overflow-hidden z-[102] m-0 p-0 touch-none select-none' 
+                    ? 'fullscreen-art-mode !fixed !inset-0 !left-0 !top-0 !w-screen !h-screen overflow-hidden z-[102] m-0 p-0 touch-none select-none' 
                     : 'gap-5 sm:gap-6'
                 }`}
                 style={isFullscreen ? { height: '100dvh', width: '100vw' } : {}}
               >
-                {/* Fullscreen Overlay UI (Floating for all devices) */}
-                {isFullscreen && (
-                  <div className="contents">
-                    <div 
-                      className="absolute right-4 sm:right-8 z-[200] flex justify-end items-center gap-2 sm:gap-4 pointer-events-none landscape-compact-header"
-                      style={{ top: 'calc(0.75rem + env(safe-area-inset-top))' }}
-                    >
-                      <div className="flex items-center gap-2 sm:gap-4 pointer-events-auto scale-90 sm:scale-100 origin-right">
-                        <button
-                          onClick={() => setIsFullscreenUIHidden(!isFullscreenUIHidden)}
-                          className={`p-2 sm:p-4 rounded-xl sm:rounded-[2rem] transition-all shadow-xl border-2 flex items-center gap-2 ${
-                            isFullscreenUIHidden 
-                              ? 'bg-blue-500 border-blue-600 text-white' 
-                              : 'bg-white/90 backdrop-blur-md border-blue-100 text-blue-500'
-                          }`}
-                          title={isFullscreenUIHidden ? "Show Artist Tools" : "Focus on Drawing (Hide Tools)"}
-                        >
-                          <Pen size={isFullscreen && typeof window !== 'undefined' && window.innerWidth > 640 ? 24 : 20} className={isFullscreenUIHidden ? 'opacity-50' : 'opacity-100'} />
-                        </button>
-                        <button
-                          onClick={toggleMusic}
-                          className={`p-2 sm:p-4 rounded-xl sm:rounded-[2rem] transition-all shadow-xl border-2 flex items-center gap-2 ${
-                            isMusicPlaying 
-                              ? 'bg-yellow-400 border-yellow-500 text-white' 
-                              : 'bg-white/90 backdrop-blur-md border-amber-100 text-amber-500'
-                          }`}
-                        >
-                          <Music size={isFullscreen && typeof window !== 'undefined' && window.innerWidth > 640 ? 24 : 20} className={isMusicPlaying ? 'animate-bounce' : ''} />
-                        </button>
-                        <button
-                          onClick={toggleFullscreen}
-                          className="p-2 sm:p-4 bg-white/90 backdrop-blur-md text-blue-600 rounded-xl sm:rounded-[2rem] shadow-xl border-2 border-blue-100 hover:bg-blue-50 transition-all"
-                        >
-                          <Minimize2 size={isFullscreen && typeof window !== 'undefined' && window.innerWidth > 640 ? 24 : 20} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Floating Toolbar (Paint) */}
-                    <div 
-                      className={`scroll-region absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[200] w-48 sm:w-72 max-h-[85vh] overflow-y-auto scrollbar-hide py-2 sm:py-6 pointer-events-none landscape-compact-toolbar transition-all duration-300 ${
-                        isFullscreenUIHidden ? 'opacity-0 -translate-x-10 pointer-events-none' : 'opacity-100 translate-x-0'
-                      }`}
-                      style={{ paddingLeft: 'env(safe-area-inset-left)' }}
-                    >
-                      <div className="pointer-events-auto shadow-2xl rounded-[1.5rem] sm:rounded-[3rem] scale-[0.85] sm:scale-100 origin-left">
-                        <Toolbar
-                          currentColor={currentColor}
-                          onColorChange={setCurrentColor}
-                          brushSize={brushSize}
-                          onBrushSizeChange={setBrushSize}
-                          activeTool={activeTool}
-                          onToolChange={setActiveTool}
-                          selectedSticker={selectedSticker}
-                          onStickerChange={setSelectedSticker}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Compact Activity Switcher bottom-right */}
-                    <div 
-                      className={`absolute right-4 sm:right-8 z-[200] flex items-end gap-3 sm:gap-6 pointer-events-none landscape-compact-switcher transition-all duration-300 ${
-                        isFullscreenUIHidden ? 'opacity-0 translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'
-                      }`}
-                      style={{ 
-                        bottom: 'calc(0.5rem + env(safe-area-inset-bottom))',
-                        paddingRight: 'env(safe-area-inset-right)'
-                      }}
-                    >
-                       <div className="pointer-events-auto scale-[0.85] sm:scale-100 origin-bottom-right">
-                         <ActivitySelector 
-                            activeActivity={activeActivity} 
-                            onActivityChange={setActiveActivity} 
-                            activeLevel={activeLevel}
-                            onLevelChange={setActiveLevel}
-                            onShowChallenge={() => setIsChallengeOpen(true)}
-                          />
-                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Activity and Fullscreen Controls */}
                 {!isFullscreen && (
                   <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-lime-50/80 px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
@@ -552,67 +469,107 @@ export default function App() {
                   </section>
                 )}
 
-                {/* Main Content Areas */}
-                <div className={`flex-1 relative ${isFullscreen ? 'h-full w-full' : 'app-draw-grid grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 lg:gap-8'}`}>
-                  {!isFullscreen && (
-                    <div className="app-sidebar-panel md:col-span-1 order-2 md:order-1 flex flex-col gap-4">
-                      <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm">
-                        <Toolbar
-                          currentColor={currentColor}
-                          onColorChange={setCurrentColor}
-                          brushSize={brushSize}
-                          onBrushSizeChange={setBrushSize}
-                          activeTool={activeTool}
-                          onToolChange={setActiveTool}
-                          selectedSticker={selectedSticker}
-                          onStickerChange={setSelectedSticker}
-                        />
-                      </div>
-
-                      <div className="hidden md:block rounded-2xl border border-stone-200/80 bg-stone-50 p-4">
-                        <h3 className="text-sm font-semibold text-stone-700 flex items-center gap-2 mb-2">
-                          <Heart size={16} className="text-pink-400" /> Tip
-                        </h3>
-                        <p className="text-xs text-stone-500 leading-relaxed">
-                          {activeTool === 'sticker'
-                            ? 'Pick a sticker and tap the canvas to place it!'
-                            : 'Draw anything you want — use magic colors!'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className={`${isFullscreen ? 'h-full w-full absolute inset-0' : 'md:col-span-3 order-1 md:order-2 draw-canvas-panel'} relative`}>
-                    <div className={`h-full ${isFullscreen ? '' : 'rounded-2xl border border-stone-200/80 bg-white p-2 sm:p-3 shadow-sm'}`}>
-                    <DrawingCanvas
-                      color={currentColor}
-                      brushSize={brushSize}
-                      onSave={handleSaveArtwork}
-                      activityType={activeActivity}
-                      level={activeLevel}
-                      activeTool={activeTool}
-                      selectedSticker={selectedSticker}
-                      isFullscreen={isFullscreen}
-                      onColorChange={setCurrentColor}
-                    />
+                {isFullscreen ? (
+                  <div className="fs-board" data-testid="fs-board">
+                    <div className="fs-board__canvas">
+                      <DrawingCanvas
+                        color={currentColor}
+                        brushSize={brushSize}
+                        onSave={handleSaveArtwork}
+                        activityType={activeActivity}
+                        level={activeLevel}
+                        activeTool={activeTool}
+                        selectedSticker={selectedSticker}
+                        isFullscreen={isFullscreen}
+                        onColorChange={setCurrentColor}
+                      />
                     </div>
 
-                    {/* Daily Challenge Modal - Centered over the Whiteboard */}
+                    <div
+                      className={`fs-board__ui ${isFullscreenUIHidden ? 'fs-board__ui--tools-hidden' : ''}`}
+                    >
+                      <div className="fs-overlay-header landscape-compact-header" data-testid="fs-overlay-header">
+                        <div className="fs-header-controls">
+                          <button
+                            type="button"
+                            onClick={() => setIsFullscreenUIHidden(!isFullscreenUIHidden)}
+                            className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all shadow-lg border-2 flex items-center gap-2 ${
+                              isFullscreenUIHidden
+                                ? 'bg-blue-500 border-blue-600 text-white'
+                                : 'bg-white/95 backdrop-blur-sm border-blue-100 text-blue-500'
+                            }`}
+                            title={isFullscreenUIHidden ? 'Show Artist Tools' : 'Focus on Drawing (Hide Tools)'}
+                          >
+                            <Pen size={20} className={isFullscreenUIHidden ? 'opacity-50' : 'opacity-100'} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={toggleMusic}
+                            className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all shadow-lg border-2 flex items-center gap-2 ${
+                              isMusicPlaying
+                                ? 'bg-yellow-400 border-yellow-500 text-white'
+                                : 'bg-white/95 backdrop-blur-sm border-amber-100 text-amber-500'
+                            }`}
+                            title={isMusicPlaying ? 'Stop Music' : 'Play Music'}
+                          >
+                            <Music size={20} className={isMusicPlaying ? 'animate-bounce' : ''} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={toggleFullscreen}
+                            className="p-2 sm:p-3 bg-white/95 backdrop-blur-sm text-blue-600 rounded-xl sm:rounded-2xl shadow-lg border-2 border-blue-100 hover:bg-blue-50 transition-all"
+                            title="Exit Fullscreen"
+                          >
+                            <Minimize2 size={20} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="fs-overlay-toolbar scroll-region scrollbar-hide landscape-compact-toolbar" data-testid="fs-overlay-toolbar">
+                        <div className="fs-toolbar-panel">
+                          <Toolbar
+                            currentColor={currentColor}
+                            onColorChange={setCurrentColor}
+                            brushSize={brushSize}
+                            onBrushSizeChange={setBrushSize}
+                            activeTool={activeTool}
+                            onToolChange={setActiveTool}
+                            selectedSticker={selectedSticker}
+                            onStickerChange={setSelectedSticker}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="fs-overlay-nav landscape-compact-switcher" data-testid="fs-overlay-nav">
+                        <div className="fs-nav-panel">
+                          <ActivitySelector
+                            variant="fullscreen"
+                            activeActivity={activeActivity}
+                            onActivityChange={setActiveActivity}
+                            activeLevel={activeLevel}
+                            onLevelChange={setActiveLevel}
+                            onShowChallenge={() => setIsChallengeOpen(true)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     <AnimatePresence>
                       {isChallengeOpen && (
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          className="absolute inset-0 z-[200] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px] rounded-[2rem]"
+                          className="absolute inset-0 z-[300] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px]"
                         >
-                          <motion.div 
+                          <motion.div
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             className="w-full max-w-md p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2.5rem] shadow-2xl text-white border-4 border-white relative"
                           >
-                            <button 
+                            <button
+                              type="button"
                               onClick={() => setIsChallengeOpen(false)}
                               className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
                             >
@@ -624,23 +581,117 @@ export default function App() {
                               </div>
                               <div>
                                 <h2 className="text-2xl font-black uppercase tracking-tight mb-1">Daily Challenge!</h2>
-                                <p className="text-purple-100 font-bold text-xl">"{dailyChallenge}"</p>
+                                <p className="text-purple-100 font-bold text-xl">&quot;{dailyChallenge}&quot;</p>
                               </div>
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => {
-                                  confetti({ 
-                                    particleCount: 100, 
-                                    spread: 60, 
+                                  confetti({
+                                    particleCount: 100,
+                                    spread: 60,
                                     origin: { y: 0.6 },
-                                    colors: ['#FF69B4', '#8A2BE2', '#FFD700', '#00BFFF']
+                                    colors: ['#FF69B4', '#8A2BE2', '#FFD700', '#00BFFF'],
                                   });
                                   setIsChallengeOpen(false);
                                 }}
                                 className="px-8 py-3 bg-yellow-400 text-purple-900 rounded-xl font-black uppercase text-lg shadow-xl hover:bg-yellow-300 transition-all mt-2"
                               >
-                                I'm Ready!
+                                I&apos;m Ready!
+                              </motion.button>
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                <div className="app-draw-grid grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 lg:gap-8 flex-1 relative">
+                  <div className="app-sidebar-panel md:col-span-1 order-2 md:order-1 flex flex-col gap-4">
+                    <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm">
+                      <Toolbar
+                        currentColor={currentColor}
+                        onColorChange={setCurrentColor}
+                        brushSize={brushSize}
+                        onBrushSizeChange={setBrushSize}
+                        activeTool={activeTool}
+                        onToolChange={setActiveTool}
+                        selectedSticker={selectedSticker}
+                        onStickerChange={setSelectedSticker}
+                      />
+                    </div>
+
+                    <div className="hidden md:block rounded-2xl border border-stone-200/80 bg-stone-50 p-4">
+                      <h3 className="text-sm font-semibold text-stone-700 flex items-center gap-2 mb-2">
+                        <Heart size={16} className="text-pink-400" /> Tip
+                      </h3>
+                      <p className="text-xs text-stone-500 leading-relaxed">
+                        {activeTool === 'sticker'
+                          ? 'Pick a sticker and tap the canvas to place it!'
+                          : 'Draw anything you want — use magic colors!'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-3 order-1 md:order-2 draw-canvas-panel relative">
+                    <div className="h-full rounded-2xl border border-stone-200/80 bg-white p-2 sm:p-3 shadow-sm">
+                      <DrawingCanvas
+                        color={currentColor}
+                        brushSize={brushSize}
+                        onSave={handleSaveArtwork}
+                        activityType={activeActivity}
+                        level={activeLevel}
+                        activeTool={activeTool}
+                        selectedSticker={selectedSticker}
+                        isFullscreen={false}
+                        onColorChange={setCurrentColor}
+                      />
+                    </div>
+
+                    <AnimatePresence>
+                      {isChallengeOpen && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0 z-[200] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px] rounded-[2rem]"
+                        >
+                          <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="w-full max-w-md p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2.5rem] shadow-2xl text-white border-4 border-white relative"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setIsChallengeOpen(false)}
+                              className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
+                            >
+                              <X size={20} />
+                            </button>
+                            <div className="flex flex-col items-center text-center gap-4">
+                              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm shadow-inner">
+                                <Trophy size={48} className="text-yellow-300 animate-bounce" />
+                              </div>
+                              <div>
+                                <h2 className="text-2xl font-black uppercase tracking-tight mb-1">Daily Challenge!</h2>
+                                <p className="text-purple-100 font-bold text-xl">&quot;{dailyChallenge}&quot;</p>
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                  confetti({
+                                    particleCount: 100,
+                                    spread: 60,
+                                    origin: { y: 0.6 },
+                                    colors: ['#FF69B4', '#8A2BE2', '#FFD700', '#00BFFF'],
+                                  });
+                                  setIsChallengeOpen(false);
+                                }}
+                                className="px-8 py-3 bg-yellow-400 text-purple-900 rounded-xl font-black uppercase text-lg shadow-xl hover:bg-yellow-300 transition-all mt-2"
+                              >
+                                I&apos;m Ready!
                               </motion.button>
                             </div>
                           </motion.div>
@@ -649,6 +700,7 @@ export default function App() {
                     </AnimatePresence>
                   </div>
                 </div>
+                )}
 
                 <AnimatePresence>
                   {isSaving && (

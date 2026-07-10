@@ -9,6 +9,7 @@ interface ActivitySelectorProps {
   activeLevel: ActivityLevel;
   onLevelChange: (level: ActivityLevel) => void;
   onShowChallenge: () => void;
+  variant?: 'default' | 'fullscreen';
 }
 
 const ACTIVITIES: {
@@ -79,46 +80,71 @@ export const ActivitySelector: React.FC<ActivitySelectorProps> = ({
   activeLevel,
   onLevelChange,
   onShowChallenge,
+  variant = 'default',
 }) => {
   const levels: ActivityLevel[] = [1, 2, 3];
+  const isFullscreen = variant === 'fullscreen';
+
+  const NavButton: React.FC<{
+    onClick: () => void;
+    className: string;
+    children: React.ReactNode;
+  }> = ({ onClick, className, children }) =>
+    isFullscreen ? (
+      <button type="button" onClick={onClick} className={className}>
+        {children}
+      </button>
+    ) : (
+      <motion.button whileTap={{ scale: 0.98 }} onClick={onClick} className={className}>
+        {children}
+      </motion.button>
+    );
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
+    <div className={`flex flex-col gap-2 ${isFullscreen ? 'items-center' : ''}`}>
+      <div
+        className={`flex gap-2 ${
+          isFullscreen ? 'flex-wrap justify-center max-w-full' : 'flex-wrap'
+        }`}
+      >
         {ACTIVITIES.map((activity) => {
           const Icon = activity.icon;
           const isActive = activeActivity === activity.id;
 
           return (
-            <motion.button
+            <NavButton
               key={activity.id}
-              whileTap={{ scale: 0.98 }}
               onClick={() => onActivityChange(activity.id)}
-              className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-base sm:text-lg font-bold border transition-all whitespace-nowrap ${
-                isActive ? activity.activeClass : activity.inactiveClass
-              }`}
+              className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-full font-bold border transition-all whitespace-nowrap ${
+                isFullscreen
+                  ? 'px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base'
+                  : 'px-4 sm:px-5 py-2 sm:py-2.5 text-base sm:text-lg'
+              } ${isActive ? activity.activeClass : activity.inactiveClass}`}
             >
               <Icon
-                className={`w-4 h-4 sm:w-5 sm:h-5 ${activity.iconClass}`}
+                className={`shrink-0 ${isFullscreen ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-4 h-4 sm:w-5 sm:h-5'} ${activity.iconClass}`}
                 strokeWidth={2.25}
               />
-              <span className={activity.labelClass}>{activity.name}</span>
-            </motion.button>
+              <span className={activity.labelClass} data-testid="activity-label">{activity.name}</span>
+            </NavButton>
           );
         })}
 
-        <motion.button
-          whileTap={{ scale: 0.98 }}
+        <NavButton
           onClick={onShowChallenge}
-          className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-base sm:text-lg font-bold border border-transparent text-[#FB7185] hover:bg-rose-50 hover:border-rose-200/80 transition-all whitespace-nowrap"
+          className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-full font-bold border border-transparent text-[#FB7185] hover:bg-rose-50 hover:border-rose-200/80 transition-all whitespace-nowrap ${
+            isFullscreen
+              ? 'px-3 py-2 text-sm sm:px-4 sm:py-2.5 sm:text-base'
+              : 'px-4 sm:px-5 py-2 sm:py-2.5 text-base sm:text-lg'
+          }`}
         >
-          <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#FB7185]" strokeWidth={2.25} />
-          <span>Challenge</span>
-        </motion.button>
+          <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-[#FB7185] shrink-0" strokeWidth={2.25} />
+          <span data-testid="activity-label">Challenge</span>
+        </NavButton>
       </div>
 
       {activeActivity !== 'free-draw' && (
-        <div className="flex items-center gap-2 w-fit">
+        <div className={`flex items-center gap-2 ${isFullscreen ? 'justify-center' : 'w-fit'}`}>
           <span className="text-xs sm:text-sm font-bold text-[#059669] uppercase tracking-wide">
             LVL
           </span>
