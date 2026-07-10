@@ -9,27 +9,70 @@
   --radius-2xl: 2rem;
 }
 
+/* Layout tokens — shared across shell, canvas, and modals */
+:root {
+  --app-max-width: 80rem; /* 1280px / max-w-7xl */
+  --app-header-height: 8rem;
+  --canvas-min-height-mobile: 48vh;
+  --canvas-min-height-tablet: 60vh;
+  --canvas-min-height-desktop: min(72vh, 760px);
+  --app-gutter: 1rem;
+  --app-gutter-sm: 1.25rem;
+  --app-gutter-lg: 2rem;
+  color-scheme: light;
+}
+
 @layer base {
   html {
-    height: 100%;
+    min-height: 100%;
+    min-height: 100dvh;
   }
-  html, body {
+
+  html,
+  body {
     @apply w-full m-0 p-0;
-    height: 100%;
-    height: -webkit-fill-available;
-    overscroll-behavior: none;
+    min-height: 100%;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
     -webkit-tap-highlight-color: transparent;
   }
+
   body {
     @apply bg-stone-50 text-slate-900 font-sans selection:bg-pink-200;
-    overflow: hidden;
-  }
-  #root {
-    height: 100%;
     overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
   }
+
+  /* Touch devices: lock body scroll; #root becomes the scroll container */
+  @media (pointer: coarse), (hover: none) {
+    body {
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+  }
+
+  /* Desktop / fine pointer: natural page scroll */
+  @media (pointer: fine) and (hover: hover) {
+    body {
+      overflow-y: auto;
+      overscroll-behavior: auto;
+    }
+  }
+
+  #root {
+    min-height: 100%;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
+  }
+
+  @media (pointer: coarse), (hover: none) {
+    #root {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+  }
+
   .font-korean {
     font-family: var(--font-korean);
     letter-spacing: -0.02em;
@@ -37,17 +80,95 @@
   }
 }
 
+/* App shell — centered content column on all viewports */
+.app-shell {
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin-inline: auto;
+  padding-inline: var(--app-gutter);
+  padding-block: 1.25rem;
+  flex: 1;
+}
+
+@media (min-width: 640px) {
+  .app-main {
+    padding-inline: var(--app-gutter-sm);
+    padding-block: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-main {
+    padding-inline: var(--app-gutter-lg);
+    padding-block: 2rem;
+  }
+}
+
 .safe-top {
-  padding-top: env(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Drawing surface — responsive height without breaking layout */
+.draw-canvas-panel {
+  min-height: var(--canvas-min-height-mobile);
+}
+
+@media (min-width: 640px) {
+  .draw-canvas-panel {
+    min-height: 56vh;
+  }
+}
+
+@media (min-width: 768px) {
+  .draw-canvas-panel {
+    min-height: var(--canvas-min-height-tablet);
+  }
+}
+
+@media (min-width: 1024px) {
+  .draw-canvas-panel {
+    min-height: var(--canvas-min-height-desktop);
+    aspect-ratio: 4 / 3;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .draw-canvas-panel {
+    min-height: 68vh;
+    aspect-ratio: auto;
+  }
 }
 
 .canvas-container {
   touch-action: none;
 }
 
+/* Scrollable regions allowed on touch devices (modals, toolbars) */
+.scroll-region,
 .help-modal-scroll {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes bounce-subtle {
@@ -59,42 +180,54 @@
   animation: bounce-subtle 2s infinite ease-in-out;
 }
 
-/* Aggressive Mobile Landscape Scaling (iPhone only) */
-@media (max-height: 440px) and (max-width: 950px) and (orientation: landscape) {
-  /* Compact main header */
+/* Compact UI for short landscape phones (touch only) */
+@media (pointer: coarse) and (max-height: 440px) and (max-width: 950px) and (orientation: landscape) {
   header {
     padding: 0.15rem 0.5rem !important;
   }
+
   header h1,
   header .hidden.sm\:inline,
   header .hidden.lg\:inline,
   header p {
     display: none !important;
   }
-  /* Keep main nav buttons visible in landscape */
+
   header nav [data-nav-btn] span {
     display: inline !important;
     font-size: 9px !important;
   }
+
   header .max-w-7xl {
     gap: 0.25rem !important;
   }
 
-  /* Art Mode (Fullscreen) UI scaling */
   .landscape-compact-header {
     transform: scale(0.55) !important;
     top: 0rem !important;
   }
-  
+
   .landscape-compact-toolbar {
     transform: scale(0.5) !important;
-    left: -1rem !important; /* Move more to edge */
+    left: -1rem !important;
     top: 50% !important;
   }
-  
+
   .landscape-compact-switcher {
     transform: scale(0.5) !important;
     right: 0rem !important;
     bottom: -15px !important;
+  }
+}
+
+/* Desktop polish — comfortable reading width and spacing */
+@media (min-width: 1024px) {
+  .app-draw-grid {
+    align-items: start;
+  }
+
+  .app-sidebar-panel {
+    position: sticky;
+    top: calc(var(--app-header-height) + 1rem);
   }
 }

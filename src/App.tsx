@@ -22,6 +22,40 @@ import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKER
 import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Star, X, Share2, Trophy, Pen, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+const isCoarsePointer = () =>
+  window.matchMedia('(pointer: coarse)').matches ||
+  window.matchMedia('(hover: none)').matches;
+
+const canScrollWithin = (target: EventTarget | null): boolean => {
+  if (!(target instanceof Element)) return false;
+
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+
+  let el: Element | null = target;
+  while (el && el !== document.documentElement) {
+    if (
+      el.classList.contains('help-modal-scroll') ||
+      el.classList.contains('scroll-region')
+    ) {
+      return true;
+    }
+
+    const style = window.getComputedStyle(el);
+    const overflowY = style.overflowY;
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      el.scrollHeight > el.clientHeight
+    ) {
+      return true;
+    }
+
+    el = el.parentElement;
+  }
+
+  return false;
+};
+
 const NURSERY_RHYMES = [
   { id: 'piano-twinkle', name: "Twinkle Twinkle Little Star (반짝반짝 작은 별)", url: 'https://www.mfiles.co.uk/mp3-downloads/twinkle-twinkle-little-star.mp3' },
   { id: 'piano-row', name: "Row Row Row Your Boat (노를 저어라)", url: 'https://www.mfiles.co.uk/mp3-downloads/row-row-row-your-boat.mp3' },
@@ -178,38 +212,29 @@ export default function App() {
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    
-    // Prevent multi-touch zooming and double-tap zoom on iOS
+
+    // Touch guards — coarse-pointer devices only (phones/tablets, not desktop mice)
     const preventZoom = (e: TouchEvent) => {
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
+      if (!isCoarsePointer()) return;
+      if (e.touches.length > 1) e.preventDefault();
     };
-    
+
     let lastTouchEnd = 0;
     const preventDoubleTap = (e: TouchEvent) => {
+      if (!isCoarsePointer()) return;
       const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
+      if (now - lastTouchEnd <= 300) e.preventDefault();
       lastTouchEnd = now;
+    };
+
+    const preventDrag = (e: TouchEvent) => {
+      if (!isCoarsePointer()) return;
+      if (canScrollWithin(e.target)) return;
+      if (e.cancelable) e.preventDefault();
     };
 
     document.addEventListener('touchstart', preventZoom, { passive: false });
     document.addEventListener('touchend', preventDoubleTap, { passive: false });
-    
-    // THE NUCLEAR OPTION: Block all page scrolling/dragging on iPad
-    const preventDrag = (e: TouchEvent) => {
-      // Allow scrolling on elements with 'overflow-y-auto' or similar
-      const target = e.target as HTMLElement;
-      if (target.closest('.overflow-y-auto, .overflow-auto')) {
-        return;
-      }
-      
-      if (e.cancelable) {
-        e.preventDefault();
-      }
-    };
     document.addEventListener('touchmove', preventDrag, { passive: false });
     
     return () => {
@@ -325,10 +350,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans text-stone-800 text-[17px] sm:text-lg">
+    <div className="app-shell bg-stone-50 font-sans text-stone-800 text-[17px] sm:text-lg">
       <header
-        className={`bg-white/95 backdrop-blur-sm sticky top-0 z-[100] border-b border-stone-200/70 shadow-sm ${isFullscreen ? 'hidden' : ''}`}
-        style={{ ['--app-header-h' as string]: '8rem' }}
+        className={`safe-top bg-white/95 backdrop-blur-sm sticky top-0 z-[100] border-b border-stone-200/70 shadow-sm ${isFullscreen ? 'hidden' : ''}`}
+        style={{ ['--app-header-h' as string]: 'var(--app-header-height, 8rem)' }}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -394,7 +419,11 @@ export default function App() {
       </header>
 
       <main
-        className={`${isFullscreen ? 'fixed inset-0 z-[100] bg-white w-screen h-screen m-0 p-0 max-w-none' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8'}`}
+        className={`${
+          isFullscreen
+            ? 'fixed inset-0 z-[100] bg-white w-screen h-[100dvh] m-0 p-0 max-w-none'
+            : 'app-main'
+        }`}
         style={{ paddingBottom: isFullscreen ? undefined : adBannerOffset }}
       >
         <AnimatePresence mode="wait">
@@ -455,7 +484,7 @@ export default function App() {
 
                     {/* Floating Toolbar (Paint) */}
                     <div 
-                      className={`absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[200] w-48 sm:w-72 max-h-[85vh] overflow-y-auto scrollbar-hide py-2 sm:py-6 pointer-events-none landscape-compact-toolbar transition-all duration-300 ${
+                      className={`scroll-region absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[200] w-48 sm:w-72 max-h-[85vh] overflow-y-auto scrollbar-hide py-2 sm:py-6 pointer-events-none landscape-compact-toolbar transition-all duration-300 ${
                         isFullscreenUIHidden ? 'opacity-0 -translate-x-10 pointer-events-none' : 'opacity-100 translate-x-0'
                       }`}
                       style={{ paddingLeft: 'env(safe-area-inset-left)' }}
@@ -524,9 +553,9 @@ export default function App() {
                 )}
 
                 {/* Main Content Areas */}
-                <div className={`flex-1 relative ${isFullscreen ? 'h-full w-full' : 'grid grid-cols-1 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8'}`}>
+                <div className={`flex-1 relative ${isFullscreen ? 'h-full w-full' : 'app-draw-grid grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 lg:gap-8'}`}>
                   {!isFullscreen && (
-                    <div className="lg:col-span-1 order-2 lg:order-1 flex flex-col gap-4">
+                    <div className="app-sidebar-panel md:col-span-1 order-2 md:order-1 flex flex-col gap-4">
                       <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm">
                         <Toolbar
                           currentColor={currentColor}
@@ -540,7 +569,7 @@ export default function App() {
                         />
                       </div>
 
-                      <div className="hidden lg:block rounded-2xl border border-stone-200/80 bg-stone-50 p-4">
+                      <div className="hidden md:block rounded-2xl border border-stone-200/80 bg-stone-50 p-4">
                         <h3 className="text-sm font-semibold text-stone-700 flex items-center gap-2 mb-2">
                           <Heart size={16} className="text-pink-400" /> Tip
                         </h3>
@@ -553,7 +582,7 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className={`${isFullscreen ? 'h-full w-full absolute inset-0' : 'lg:col-span-3 order-1 lg:order-2 h-[50vh] landscape:h-[70vh] sm:h-[58vh] lg:h-auto'} relative`}>
+                  <div className={`${isFullscreen ? 'h-full w-full absolute inset-0' : 'md:col-span-3 order-1 md:order-2 draw-canvas-panel'} relative`}>
                     <div className={`h-full ${isFullscreen ? '' : 'rounded-2xl border border-stone-200/80 bg-white p-2 sm:p-3 shadow-sm'}`}>
                     <DrawingCanvas
                       color={currentColor}
@@ -659,7 +688,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="sticky z-40 mb-6" style={{ top: 'var(--app-header-h, 6.25rem)' }}>
+              <div className="sticky z-40 mb-6 scroll-region" style={{ top: 'var(--app-header-h, var(--app-header-height, 6.25rem))' }}>
                 <FrameSelector selectedFrame={selectedFrame} onSelect={setSelectedFrame} />
               </div>
 
