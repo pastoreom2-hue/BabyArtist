@@ -11,6 +11,7 @@ import { FrameSelector } from './components/FrameSelector';
 import { FramedArtwork } from './components/FramedArtwork';
 import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { OnboardingTour } from './components/OnboardingTour';
+import { FullscreenDock } from './components/FullscreenDock';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
 import { HelpModal } from './components/HelpModal';
 import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
@@ -182,6 +183,8 @@ export default function App() {
     );
 
     if (!isCurrentlyFullscreen) {
+      setActiveTool('pen');
+      setSelectedSticker(null);
       if (el.requestFullscreen) {
         el.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => setIsFullscreen(true));
       } else if ((el as any).webkitRequestFullscreen) {
@@ -480,18 +483,23 @@ export default function App() {
                       />
                     </div>
 
-                    {/* Canvas-only chrome: exit control only */}
+                    {/* Slim essential tools dock — keeps canvas spacious */}
                     <div className="fs-board__ui" data-testid="fs-board-ui">
-                      <button
-                        type="button"
-                        onClick={toggleFullscreen}
-                        className="fs-exit-btn"
-                        title="Exit Fullscreen"
-                        aria-label="Exit Fullscreen"
-                        data-testid="fs-exit-btn"
-                      >
-                        <X size={16} strokeWidth={2.5} aria-hidden />
-                      </button>
+                      <FullscreenDock
+                        currentColor={currentColor}
+                        onColorChange={(color) => {
+                          setActiveTool('pen');
+                          setSelectedSticker(null);
+                          setCurrentColor(color);
+                        }}
+                        brushSize={brushSize}
+                        onBrushSizeChange={(size) => {
+                          setActiveTool('pen');
+                          setSelectedSticker(null);
+                          setBrushSize(size);
+                        }}
+                        onExit={toggleFullscreen}
+                      />
                     </div>
 
                     <AnimatePresence>

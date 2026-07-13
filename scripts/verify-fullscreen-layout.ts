@@ -1,10 +1,9 @@
 /**
- * Fullscreen layout verification for BabyArtist (canvas-only mode).
+ * Fullscreen layout verification for BabyArtist (Option B — slim dock).
  *
- * Checks that fullscreen shows a full-bleed white board, hides toolbar/nav,
- * and keeps a small exit control visible across laptop/tablet/phone viewports.
+ * Full-bleed canvas + floating essential tools dock; header and activity nav hidden.
  *
- * Prerequisites: dev server on http://localhost:3000 (auto-waited if already running).
+ * Prerequisites: dev server on http://localhost:3000
  */
 import { chromium, type Browser, type Page } from 'playwright';
 import http from 'node:http';
@@ -40,7 +39,7 @@ function rectFromBox(box: { x: number; y: number; width: number; height: number 
   };
 }
 
-function isWithinViewport(r: Rect, vw: number, vh: number, tolerance = 1): boolean {
+function isWithinViewport(r: Rect, vw: number, vh: number, tolerance = 2): boolean {
   return (
     r.left >= -tolerance &&
     r.top >= -tolerance &&
@@ -49,7 +48,7 @@ function isWithinViewport(r: Rect, vw: number, vh: number, tolerance = 1): boole
   );
 }
 
-function isInsideContainer(inner: Rect, outer: Rect, padding = 2): boolean {
+function isInsideContainer(inner: Rect, outer: Rect, padding = 0): boolean {
   return (
     inner.left >= outer.left + padding &&
     inner.top >= outer.top + padding &&
@@ -103,7 +102,8 @@ async function enterFullscreen(page: Page): Promise<void> {
   await fullscreenBtn.waitFor({ state: 'visible', timeout: 45_000 });
   await fullscreenBtn.click();
   await page.locator('[data-testid="fs-board"]').waitFor({ state: 'visible', timeout: 15_000 });
-  await page.waitForTimeout(500);
+  await page.locator('[data-testid="fs-floating-dock"]').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(400);
 }
 
 async function getRect(page: Page, selector: string): Promise<Rect | null> {
@@ -116,14 +116,25 @@ async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number
 
   const results: CheckResult[] = [];
   const { width: vw, height: vh } = viewport;
+  const isShortLandscape = vw > vh && vh <= 520;
 
   const board = await getRect(page, '[data-testid="fs-board"]');
+  const dock = await getRect(page, '[data-testid="fs-floating-dock"]');
   const exitBtn = await getRect(page, '[data-testid="fs-exit-btn"]');
   const actions = await getRect(page, '[data-testid="fs-canvas-actions"]');
 
   const toolbarCount = await page.locator('[data-testid="fs-overlay-toolbar"]').count();
   const navCount = await page.locator('[data-testid="fs-overlay-nav"]').count();
   const headerCount = await page.locator('[data-testid="fs-overlay-header"]').count();
+  const swatchCount = await page.locator('[data-testid="fs-floating-dock"] .fs-dock-swatch').count();
+  const sizeCount = await page.locator('[data-testid="fs-floating-dock"] .fs-dock-size').count();
+
+  // Header chrome should be hidden in FS
+  const appHeaderVisible = await page.locator('header').first().isVisible().catch(() => false);
+  const activityStripVisible = await page
+    .locator('button[title="Fullscreen Art Mode"]')
+    .isVisible()
+    .catch(() => false);
 
   if (!board) {
     results.push({ name: 'canvas-board-exists', pass: false, detail: 'fs-board not found' });
@@ -139,19 +150,19 @@ async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number
   results.push({
     name: 'canvas-fills-viewport',
     pass: fillsViewport && isWithinViewport(board, vw, vh, 2),
-    detail: `board [${board.left.toFixed(0)},${board.top.toFixed(0)} ${board.width.toFixed(0)}x${board.height.toFixed(0)}] vs ${vw}x${vh}`,
+    detail: `board ${board.width.toFixed(0)}x${board.height.toFixed(0)} vs ${vw}x${vh}`,
   });
 
   results.push({
-    name: 'toolbar-hidden',
+    name: 'bulky-toolbar-hidden',
     pass: toolbarCount === 0,
     detail: `fs-overlay-toolbar count=${toolbarCount}`,
   });
 
   results.push({
     name: 'activity-nav-hidden',
-    pass: navCount === 0,
-    detail: `fs-overlay-nav count=${navCount}`,
+    pass: navCount === 0 && !activityStripVisible,
+    detail: `nav=${navCount}, fullscreen-btn-visible=${activityStripVisible}`,
   });
 
   results.push({
@@ -160,45 +171,78 @@ async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number
     detail: `fs-overlay-header count=${headerCount}`,
   });
 
-  if (exitBtn) {
-    const inside = isInsideContainer(exitBtn, board, 0);
-    const nearTopRight =
-      exitBtn.top <= board.top + Math.max(64, board.height * 0.12) &&
-      exitBtn.right >= board.right - Math.max(80, board.width * 0.2);
-    const compact = exitBtn.width <= 48 && exitBtn.height <= 48;
+  results.push({
+    name: 'app-header-hidden',
+    pass: !appHeaderVisible,
+    detail: `header visible=${appHeaderVisible}`,
+  });
+
+  if (dock) {
+    const inside = isInsideContainer(dock, board, 0);
+    const slim = isShortLandscape ? dock.width <= Math.max(88, vw * 0.22) : dock.height <= 88;
+    const anchored = isShortLandscape
+      ? dock.left <= board.left + Math.max(72, board.width * 0.2)
+      : dock.bottom >= board.bottom - Math.max(96, board.height * 0.18);
 
     results.push({
-      name: 'exit-btn-visible-top-right',
-      pass: inside && nearTopRight && isWithinViewport(exitBtn, vw, vh),
-      detail: `exit at (${exitBtn.left.toFixed(0)},${exitBtn.top.toFixed(0)}) size ${exitBtn.width.toFixed(0)}x${exitBtn.height.toFixed(0)}`,
+      name: 'dock-visible-inside-board',
+      pass: inside && isWithinViewport(dock, vw, vh) && anchored,
+      detail: `dock [${dock.left.toFixed(0)},${dock.top.toFixed(0)} ${dock.width.toFixed(0)}x${dock.height.toFixed(0)}] landscapeSide=${isShortLandscape}`,
     });
     results.push({
-      name: 'exit-btn-compact',
-      pass: compact,
-      detail: `${exitBtn.width.toFixed(0)}x${exitBtn.height.toFixed(0)} (max 48)`,
+      name: 'dock-slim',
+      pass: slim,
+      detail: isShortLandscape
+        ? `width ${dock.width.toFixed(0)}px (max ~22vw)`
+        : `height ${dock.height.toFixed(0)}px (max 88)`,
+    });
+  } else {
+    results.push({ name: 'dock-exists', pass: false, detail: 'fs-floating-dock missing' });
+  }
+
+  results.push({
+    name: 'dock-has-core-colors',
+    pass: swatchCount >= 6 && swatchCount <= 10,
+    detail: `swatches=${swatchCount}`,
+  });
+
+  results.push({
+    name: 'dock-has-brush-sizes',
+    pass: sizeCount === 4,
+    detail: `sizes=${sizeCount}`,
+  });
+
+  if (exitBtn && dock) {
+    // Exit is pinned in the dock chrome (not the scroll strip) — allow 4px tolerance
+    const inside =
+      exitBtn.left >= dock.left - 4 &&
+      exitBtn.top >= dock.top - 4 &&
+      exitBtn.right <= dock.right + 4 &&
+      exitBtn.bottom <= dock.bottom + 4;
+    results.push({
+      name: 'exit-inside-dock',
+      pass: inside,
+      detail: `exit ${exitBtn.width.toFixed(0)}x${exitBtn.height.toFixed(0)} inside dock`,
     });
   } else {
     results.push({ name: 'exit-btn-exists', pass: false, detail: 'fs-exit-btn missing' });
   }
 
-  if (actions) {
-    const insideBoard = isInsideContainer(actions, board, 0);
-    const clearOfExit = !exitBtn || !rectsOverlap(actions, exitBtn, 8);
+  if (actions && dock) {
     results.push({
       name: 'canvas-actions-inside-board',
-      pass: insideBoard,
-      detail: 'save/trash cluster inside board',
+      pass: isInsideContainer(actions, board, 0),
+      detail: 'save/trash inside board',
     });
     results.push({
-      name: 'canvas-actions-clear-of-exit',
-      pass: clearOfExit,
-      detail: 'save/trash do not overlap exit control',
+      name: 'canvas-actions-clear-of-dock',
+      pass: !rectsOverlap(actions, dock, 4),
+      detail: 'save/trash clear of floating dock',
     });
-  } else {
+  } else if (!actions) {
     results.push({ name: 'canvas-actions-exist', pass: false, detail: 'fs-canvas-actions missing' });
   }
 
-  // Exit restores normal draw chrome
   await page.locator('[data-testid="fs-exit-btn"]').click();
   await page.waitForTimeout(400);
   const boardGone = (await page.locator('[data-testid="fs-board"]').count()) === 0;
@@ -219,7 +263,7 @@ function printReport(allResults: Map<string, CheckResult[]>): boolean {
   let totalFail = 0;
 
   console.log('\n═══════════════════════════════════════════════════════════');
-  console.log('  BabyArtist Fullscreen Layout Verification (canvas-only)');
+  console.log('  BabyArtist Fullscreen Layout Verification (slim dock)');
   console.log('═══════════════════════════════════════════════════════════\n');
 
   for (const vp of VIEWPORTS) {

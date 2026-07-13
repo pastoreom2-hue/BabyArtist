@@ -222,70 +222,238 @@
   pointer-events: none;
 }
 
-/* Tiny unobtrusive exit — top-right, semi-transparent until hovered */
-.fullscreen-art-mode .fs-exit-btn {
+/* Slim floating dock — bottom on most screens; side on squat landscape */
+.fullscreen-art-mode .fs-floating-dock {
   position: absolute;
-  top: max(0.75rem, env(safe-area-inset-top, 0px));
-  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  left: 50%;
+  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
   z-index: 210;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: calc(100% - 1.25rem);
+  padding: 0.4rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
+  pointer-events: auto;
+}
+
+.fullscreen-art-mode .fs-dock-scroll {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.fullscreen-art-mode .fs-dock-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.fullscreen-art-mode .fs-dock-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.fullscreen-art-mode .fs-dock-divider {
+  width: 1px;
+  height: 1.35rem;
+  background: rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
+.fullscreen-art-mode .fs-dock-swatch {
+  width: 1.65rem;
+  height: 1.65rem;
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.fullscreen-art-mode .fs-dock-swatch.is-light {
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.22);
+}
+
+.fullscreen-art-mode .fs-dock-swatch.is-active {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px #ec4899, 0 2px 6px rgba(236, 72, 153, 0.35);
+}
+
+.fullscreen-art-mode .fs-dock-swatch:active {
+  transform: scale(0.96);
+}
+
+.fullscreen-art-mode .fs-dock-size {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  min-width: 2rem;
-  min-height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.55rem;
+  background: rgba(244, 244, 245, 0.85);
+  color: #57534e;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+}
+
+.fullscreen-art-mode .fs-dock-size.is-active {
+  background: #ec4899;
+  color: #ffffff;
+}
+
+.fullscreen-art-mode .fs-dock-size-dot {
+  display: block;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.fullscreen-art-mode .fs-dock-exit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  min-width: 1.85rem;
+  min-height: 1.85rem;
   padding: 0;
   border: none;
   border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.28);
-  color: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
-  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.38);
+  color: rgba(255, 255, 255, 0.95);
   cursor: pointer;
-  transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
-  opacity: 0.72;
+  flex-shrink: 0;
+  transition: background 0.12s ease, transform 0.12s ease;
 }
 
-.fullscreen-art-mode .fs-exit-btn:hover,
-.fullscreen-art-mode .fs-exit-btn:focus-visible {
-  opacity: 1;
-  background: rgba(15, 23, 42, 0.55);
+.fullscreen-art-mode .fs-dock-exit:hover,
+.fullscreen-art-mode .fs-dock-exit:focus-visible {
+  background: rgba(15, 23, 42, 0.62);
   outline: none;
 }
 
-.fullscreen-art-mode .fs-exit-btn:active {
+.fullscreen-art-mode .fs-dock-exit:active {
   transform: scale(0.94);
 }
 
-/* In-canvas controls (Save / Trash) — corner-anchored, clear of exit */
+/* In-canvas controls sit above the floating dock */
 .fullscreen-art-mode .fs-canvas-inner {
   background: #ffffff;
 }
 
 .fullscreen-art-mode .fs-canvas-actions {
   right: max(0.75rem, env(safe-area-inset-right, 0px));
-  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  bottom: max(4.25rem, calc(env(safe-area-inset-bottom, 0px) + 3.75rem));
 }
 
-.fullscreen-art-mode .fs-activity-hint {
-  top: max(3rem, calc(env(safe-area-inset-top, 0px) + 2.75rem));
-  left: 0.75rem;
-  right: 3.5rem;
+/* Phones: slightly denser dock, still tappable */
+@media (max-width: 480px) {
+  .fullscreen-art-mode .fs-floating-dock {
+    gap: 0.3rem;
+    padding: 0.35rem 0.4rem;
+  }
+
+  .fullscreen-art-mode .fs-dock-swatch {
+    width: 1.5rem;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  .fullscreen-art-mode .fs-dock-size {
+    width: 1.6rem;
+    height: 1.6rem;
+    min-width: 1.6rem;
+    min-height: 1.6rem;
+  }
+
+  .fullscreen-art-mode .fs-canvas-actions {
+    bottom: max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 4rem));
+  }
 }
 
-.fullscreen-art-mode .fs-color-legend {
-  left: max(0.75rem, env(safe-area-inset-left, 0px));
-  bottom: max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 5rem));
+/* Tablets / larger phones: roomier hit targets */
+@media (min-width: 768px) {
+  .fullscreen-art-mode .fs-floating-dock {
+    gap: 0.5rem;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .fullscreen-art-mode .fs-dock-swatch {
+    width: 1.85rem;
+    height: 1.85rem;
+    min-width: 1.85rem;
+    min-height: 1.85rem;
+  }
+
+  .fullscreen-art-mode .fs-dock-size {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+  }
+
+  .fullscreen-art-mode .fs-dock-exit {
+    width: 2.1rem;
+    height: 2.1rem;
+    min-width: 2.1rem;
+    min-height: 2.1rem;
+  }
 }
 
-/* Legacy landscape helpers no longer used in canvas-only FS */
-@media (orientation: landscape) and (max-height: 500px) {
-  .fullscreen-art-mode .fs-exit-btn {
-    width: 1.75rem;
-    height: 1.75rem;
-    min-width: 1.75rem;
-    min-height: 1.75rem;
+/* Short landscape (phones/tablets sideways): vertical dock on the left */
+@media (orientation: landscape) and (max-height: 520px) {
+  .fullscreen-art-mode .fs-floating-dock {
+    left: max(0.55rem, env(safe-area-inset-left, 0px));
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+    flex-direction: column;
+    max-width: none;
+    max-height: calc(100% - 1rem);
+    border-radius: 1.25rem;
+    padding: 0.45rem 0.4rem;
+  }
+
+  .fullscreen-art-mode .fs-dock-scroll {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: calc(100dvh - 4.5rem);
+  }
+
+  .fullscreen-art-mode .fs-dock-group {
+    flex-direction: column;
+  }
+
+  .fullscreen-art-mode .fs-dock-divider {
+    width: 1.35rem;
+    height: 1px;
+  }
+
+  .fullscreen-art-mode .fs-canvas-actions {
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
   }
 }
 
