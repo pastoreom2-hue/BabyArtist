@@ -17,13 +17,13 @@ test.describe('BabyArtist core flows', () => {
     await prepareApp(page);
   });
 
-  test('main canvas renders and accepts drawing', async ({ page }) => {
+  test('main canvas renders and accepts drawing', { tag: '@smoke' }, async ({ page }) => {
     await expect(page.locator('[data-testid="drawing-canvas"]')).toBeVisible();
     await expect(page.locator('button[title="Fullscreen Art Mode"]')).toBeVisible();
     await drawStrokeAndAssert(page);
   });
 
-  test('Color by Number guide stays inside canvas without overflow', async ({ page }) => {
+  test('Color by Number guide stays inside canvas without overflow', { tag: '@smoke' }, async ({ page }) => {
     await selectActivity(page, /Color by Number/i);
     await expect(page.locator('[data-testid="canvas-activity-hint"]')).toBeVisible();
     await expect(page.locator('[data-testid="canvas-color-legend"]')).toBeVisible();
@@ -50,7 +50,7 @@ test.describe('BabyArtist core flows', () => {
     await expect(page.locator('[data-testid="drawing-canvas"] canvas').first()).toBeVisible();
   });
 
-  test('Shape Match art stays centered inside the white board', async ({ page }) => {
+  test('Shape Match art stays centered inside the white board', { tag: '@smoke' }, async ({ page }) => {
     await selectActivity(page, /Shape Match/i);
     await expect(page.locator('[data-testid="canvas-activity-hint"]')).toBeVisible();
     await expect(page.locator('[data-testid="canvas-color-legend"]')).toHaveCount(0);
@@ -73,7 +73,7 @@ test.describe('BabyArtist core flows', () => {
     expect(cy).toBeGreaterThan(0);
   });
 
-  test('Fullscreen Option B shows slim tool-belt and stable canvas layout', async ({ page }) => {
+  test('Fullscreen Option B shows slim tool-belt and stable canvas layout', { tag: '@smoke' }, async ({ page }) => {
     await selectActivity(page, /Color by Number/i);
     await enterFullscreen(page);
 

@@ -6,10 +6,19 @@ on:
   pull_request:
     branches: [master, main]
   workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Which E2E suite to run'
+        required: true
+        default: full
+        type: choice
+        options:
+          - smoke
+          - full
 
 jobs:
   playwright:
-    name: Playwright E2E
+    name: Playwright (${{ github.event_name == 'workflow_dispatch' && inputs.suite || 'smoke' }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,8 +37,15 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run automated E2E suite
-        run: npm run test:auto
+      - name: Run smoke E2E (fast path)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.suite == 'smoke' }}
+        run: npm run test:auto:smoke
+        env:
+          CI: true
+
+      - name: Run full E2E (pre-deploy)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.suite == 'full' }}
+        run: npm run test:auto:full
         env:
           CI: true
 

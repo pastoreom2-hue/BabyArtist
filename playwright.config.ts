@@ -1,21 +1,37 @@
+import os from 'node:os';
 import { defineConfig } from '@playwright/test';
 
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 
+/** `smoke` = critical path on every push; `full` = all viewports before deploy */
+const MODE = (process.env.PLAYWRIGHT_MODE ?? 'smoke').toLowerCase();
+const isSmoke = MODE === 'smoke';
+const cpuCount = Math.max(1, os.cpus()?.length ?? 2);
+
 /**
  * BabyArtist automated E2E suite.
- * Agents / CI: `npm run test:auto`
+ *
+ * Fast (default):  `npm run test:auto` / `npm run test:auto:smoke`
+ * Full (pre-prod): `npm run test:auto:full`
  */
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false,
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
-  reporter: process.env.CI ? [['github'], ['list']] : [['list'], ['html', { open: 'never' }]],
+  // Smoke: stop on first failure to save CI minutes
+  maxFailures: isSmoke ? 1 : undefined,
+  retries: process.env.CI ? (isSmoke ? 1 : 2) : 0,
+  workers: process.env.PLAYWRIGHT_WORKERS
+    ? Number(process.env.PLAYWRIGHT_WORKERS)
+    : cpuCount,
+  timeout: isSmoke ? 45_000 : 60_000,
+  expect: { timeout: isSmoke ? 10_000 : 15_000 },
+  reporter: process.env.CI
+    ? [['github'], ['list']]
+    : [['list'], ['html', { open: 'never' }]],
+  // Smoke only runs @smoke-tagged specs; full runs everything
+  grep: isSmoke ? /@smoke/ : undefined,
   use: {
     baseURL: BASE_URL,
     browserName: 'chromium',
@@ -23,33 +39,43 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [
-    {
-      name: 'desktop',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 1440, height: 900 },
-      },
-    },
-    {
-      name: 'ipad',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 768, height: 1024 },
-        isMobile: true,
-        hasTouch: true,
-      },
-    },
-    {
-      name: 'iphone',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-      },
-    },
-  ],
+  projects: isSmoke
+    ? [
+        {
+          name: 'desktop-smoke',
+          use: {
+            browserName: 'chromium',
+            viewport: { width: 1440, height: 900 },
+          },
+        },
+      ]
+    : [
+        {
+          name: 'desktop',
+          use: {
+            browserName: 'chromium',
+            viewport: { width: 1440, height: 900 },
+          },
+        },
+        {
+          name: 'ipad',
+          use: {
+            browserName: 'chromium',
+            viewport: { width: 768, height: 1024 },
+            isMobile: true,
+            hasTouch: true,
+          },
+        },
+        {
+          name: 'iphone',
+          use: {
+            browserName: 'chromium',
+            viewport: { width: 390, height: 844 },
+            isMobile: true,
+            hasTouch: true,
+          },
+        },
+      ],
   webServer: {
     command: `npm run dev -- --port ${PORT} --host 127.0.0.1`,
     url: BASE_URL,
