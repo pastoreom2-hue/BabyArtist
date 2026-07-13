@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -13,6 +13,8 @@ import {
   Hash,
   Shapes,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { HELP_GUIDE, HelpLang } from '../helpGuideContent';
 import { APP_URL } from '../config/app';
@@ -76,18 +78,51 @@ function PlatformCard({
 }
 
 function HelpIntroVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = next;
+    if (!next) {
+      void video.play().catch(() => {
+        // Browser may still block audio until a second gesture; keep UI in sync.
+      });
+    }
+  };
+
   return (
     <div className="help-intro-video" data-testid="help-intro-video">
       <video
+        ref={videoRef}
         className="help-intro-video__media"
         src="/videos/help-guide.mp4"
         autoPlay
-        muted
+        muted={muted}
         loop
         playsInline
         preload="metadata"
         aria-label="BabyArtist animated logo introduction"
       />
+      <button
+        type="button"
+        className={`help-intro-video__mute ${muted ? 'is-muted' : 'is-unmuted'}`}
+        onClick={toggleMute}
+        aria-label={muted ? 'Unmute video' : 'Mute video'}
+        aria-pressed={!muted}
+        title={muted ? 'Unmute' : 'Mute'}
+        data-testid="help-video-mute-btn"
+      >
+        {muted ? (
+          <VolumeX className="help-intro-video__mute-icon" strokeWidth={2.4} aria-hidden />
+        ) : (
+          <Volume2 className="help-intro-video__mute-icon" strokeWidth={2.4} aria-hidden />
+        )}
+        <span className="help-intro-video__mute-label">{muted ? 'Sound' : 'Mute'}</span>
+      </button>
     </div>
   );
 }

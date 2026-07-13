@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { prepareApp, getRect, isInside } from './helpers';
+import { prepareApp, getRect, isInside, overlaps } from './helpers';
 
 test.describe('Help guide', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,32 +13,53 @@ test.describe('Help guide', () => {
 
     const videoWrap = page.locator('[data-testid="help-intro-video"]');
     const video = videoWrap.locator('video');
+    const muteBtn = page.locator('[data-testid="help-video-mute-btn"]');
     await expect(videoWrap).toBeVisible();
     await expect(video).toBeVisible();
+    await expect(muteBtn).toBeVisible();
 
     const wrapBox = await getRect(videoWrap);
     const mediaBox = await getRect(video);
+    const muteBox = await getRect(muteBtn);
     const viewport = page.viewportSize()!;
 
     expect(wrapBox).toBeTruthy();
     expect(mediaBox).toBeTruthy();
+    expect(muteBox).toBeTruthy();
     expect(wrapBox!.width).toBeGreaterThan(120);
     expect(wrapBox!.width).toBeLessThanOrEqual(viewport.width + 2);
     expect(wrapBox!.right).toBeLessThanOrEqual(viewport.width + 4);
     expect(isInside(mediaBox!, wrapBox!, 3)).toBe(true);
+    expect(isInside(muteBox!, wrapBox!, 2)).toBe(true);
+
+    // Easy tap target on mobile
+    expect(muteBox!.width).toBeGreaterThanOrEqual(40);
+    expect(muteBox!.height).toBeGreaterThanOrEqual(40);
 
     await expect(video).toHaveAttribute('loop', '');
     await expect(video).toHaveAttribute('playsinline', '');
 
-    // muted + autoplay required for silent loop intro
-    const autoplayOk = await video.evaluate((el) => {
-      const v = el as HTMLVideoElement;
-      return v.autoplay && v.muted && v.loop && v.playsInline;
-    });
-    expect(autoplayOk).toBe(true);
+    // Starts muted for autoplay policy
+    const startMuted = await video.evaluate((el) => (el as HTMLVideoElement).muted);
+    expect(startMuted).toBe(true);
+    await expect(muteBtn).toHaveAttribute('aria-label', 'Unmute video');
+
+    // One tap toggles sound without breaking layout
+    await muteBtn.click();
+    const unmuted = await video.evaluate((el) => !(el as HTMLVideoElement).muted);
+    expect(unmuted).toBe(true);
+    await expect(muteBtn).toHaveAttribute('aria-label', 'Mute video');
+
+    const muteBoxAfter = await getRect(muteBtn);
+    expect(muteBoxAfter).toBeTruthy();
+    expect(isInside(muteBoxAfter!, wrapBox!, 2)).toBe(true);
+
+    // Guide sections still readable below video
+    const firstSection = await getRect(dialog.locator('section').first());
+    expect(firstSection).toBeTruthy();
+    expect(overlaps(muteBoxAfter!, firstSection!, 0)).toBe(false);
 
     await expect(page.locator('#help-modal-title')).toBeVisible();
-    await expect(dialog.locator('section').first()).toBeVisible();
 
     await dialog.locator('button[aria-label="Close"]').click();
     await expect(dialog).toHaveCount(0);
