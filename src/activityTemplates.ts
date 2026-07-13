@@ -170,69 +170,74 @@ function drawRainbow(ctx: CanvasRenderingContext2D, x: number, y: number, r: num
   }
 }
 
-function drawShapeMatchLevel1(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const shapes = [
-    { type: 'circle', x: w * 0.25, y: h * 0.5, size: 70, label: 'Circle' },
-    { type: 'square', x: w * 0.5, y: h * 0.5, size: 90, label: 'Square' },
-    { type: 'triangle', x: w * 0.75, y: h * 0.5, size: 90, label: 'Triangle' },
-  ] as const;
-
-  shapes.forEach(({ type, x, y, size, label }) => {
-    const fill = 'rgba(99, 102, 241, 0.08)';
-    if (type === 'circle') drawCircle(ctx, x, y, size, { fill, dash: true });
-    if (type === 'square') drawSquare(ctx, x, y, size, { fill, dash: true });
-    if (type === 'triangle') drawTriangle(ctx, x, y, size, { fill, dash: true });
-    drawLabel(ctx, label, x, y + size / 2 + 28, 18);
-  });
-}
-
 function drawShapeMatchLevel2(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  drawCircle(ctx, w * 0.2, h * 0.35, 50, { fill: 'rgba(59,130,246,0.08)', dash: true });
-  drawLabel(ctx, 'Circle', w * 0.2, h * 0.35 + 72, 16);
-  drawSquare(ctx, w * 0.5, h * 0.35, 70, { fill: 'rgba(34,197,94,0.08)', dash: true });
-  drawLabel(ctx, 'Square', w * 0.5, h * 0.35 + 82, 16);
-  drawTriangle(ctx, w * 0.8, h * 0.35, 70, { fill: 'rgba(168,85,247,0.08)', dash: true });
-  drawLabel(ctx, 'Triangle', w * 0.8, h * 0.35 + 82, 16);
-  drawStar(ctx, w * 0.35, h * 0.72, 45);
-  drawLabel(ctx, 'Star', w * 0.35, h * 0.72 + 62, 16);
-  drawHeart(ctx, w * 0.65, h * 0.72, 55);
-  drawLabel(ctx, 'Heart', w * 0.65, h * 0.72 + 62, 16);
+  const topY = h * 0.32;
+  const bottomY = h * 0.68;
+
+  drawCircle(ctx, w * 0.2, topY, Math.min(50, w * 0.1), { fill: 'rgba(59,130,246,0.08)', dash: true });
+  drawLabel(ctx, 'Circle', w * 0.2, topY + Math.min(72, h * 0.12), 16);
+  drawSquare(ctx, w * 0.5, topY, Math.min(70, w * 0.12), { fill: 'rgba(34,197,94,0.08)', dash: true });
+  drawLabel(ctx, 'Square', w * 0.5, topY + Math.min(82, h * 0.13), 16);
+  drawTriangle(ctx, w * 0.8, topY, Math.min(70, w * 0.12), { fill: 'rgba(168,85,247,0.08)', dash: true });
+  drawLabel(ctx, 'Triangle', w * 0.8, topY + Math.min(82, h * 0.13), 16);
+  drawStar(ctx, w * 0.35, bottomY, Math.min(45, w * 0.09));
+  drawLabel(ctx, 'Star', w * 0.35, bottomY + Math.min(58, h * 0.1), 16);
+  drawHeart(ctx, w * 0.65, bottomY, Math.min(55, w * 0.1));
+  drawLabel(ctx, 'Heart', w * 0.65, bottomY + Math.min(58, h * 0.1), 16);
 }
 
 function drawShapeMatchLevel3(ctx: CanvasRenderingContext2D, w: number, h: number) {
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       const x = w * (0.2 + i * 0.3);
-      const y = h * (0.25 + j * 0.25);
-      drawCircle(ctx, x, y, 38, {
+      const y = h * (0.22 + j * 0.26);
+      drawCircle(ctx, x, y, Math.min(38, Math.min(w, h) * 0.07), {
         fill: 'rgba(14,165,233,0.07)',
         stroke: '#0ea5e9',
         dash: true,
       });
     }
   }
-  drawLabel(ctx, 'Trace all circles!', w * 0.5, h * 0.92, 20);
+  drawLabel(ctx, 'Trace all circles!', w * 0.5, h * 0.94, 18);
+}
+
+function drawShapeMatchLevel1(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const size = Math.min(90, Math.min(w, h) * 0.18);
+  const shapes = [
+    { type: 'circle', x: w * 0.25, y: h * 0.48, size: size * 0.78, label: 'Circle' },
+    { type: 'square', x: w * 0.5, y: h * 0.48, size, label: 'Square' },
+    { type: 'triangle', x: w * 0.75, y: h * 0.48, size, label: 'Triangle' },
+  ] as const;
+
+  shapes.forEach(({ type, x, y, size: s, label }) => {
+    const fill = 'rgba(99, 102, 241, 0.08)';
+    if (type === 'circle') drawCircle(ctx, x, y, s, { fill, dash: true });
+    if (type === 'square') drawSquare(ctx, x, y, s, { fill, dash: true });
+    if (type === 'triangle') drawTriangle(ctx, x, y, s, { fill, dash: true });
+    drawLabel(ctx, label, x, Math.min(h * 0.92, y + s / 2 + 26), 18);
+  });
 }
 
 function drawColorByNumberLevel2(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const fontSize = Math.min(80, Math.min(w, h) * 0.16);
   const letters = [
-    { char: 'A', num: 1, x: w * 0.28, y: h * 0.4 },
-    { char: 'B', num: 2, x: w * 0.42, y: h * 0.4 },
-    { char: 'C', num: 3, x: w * 0.56, y: h * 0.4 },
-    { char: 'D', num: 4, x: w * 0.35, y: h * 0.65 },
-    { char: 'E', num: 5, x: w * 0.5, y: h * 0.65 },
-    { char: 'F', num: 6, x: w * 0.65, y: h * 0.65 },
+    { char: 'A', num: 1, x: w * 0.28, y: h * 0.38 },
+    { char: 'B', num: 2, x: w * 0.42, y: h * 0.38 },
+    { char: 'C', num: 3, x: w * 0.56, y: h * 0.38 },
+    { char: 'D', num: 4, x: w * 0.35, y: h * 0.62 },
+    { char: 'E', num: 5, x: w * 0.5, y: h * 0.62 },
+    { char: 'F', num: 6, x: w * 0.65, y: h * 0.62 },
   ];
 
   ctx.save();
-  ctx.font = 'bold 80px system-ui, sans-serif';
+  ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   letters.forEach(({ char, num, x, y }) => {
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 3;
     ctx.strokeText(char, x, y);
-    drawNumberBadge(ctx, num, x + 36, y - 36);
+    drawNumberBadge(ctx, num, x + fontSize * 0.42, y - fontSize * 0.42);
   });
   ctx.restore();
 }
@@ -242,20 +247,31 @@ export function drawActivityTemplate(
   activityType: ActivityType,
   level: ActivityLevel,
   width: number,
-  height: number
+  height: number,
+  insets: { top: number; right: number; bottom: number; left: number } = {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  }
 ) {
-  ctx.clearRect(0, 0, width * 2, height * 2);
+  // Parent context already applies devicePixelRatio — draw in CSS pixel space.
+  ctx.clearRect(0, 0, width, height);
+
+  const iw = Math.max(1, width - insets.left - insets.right);
+  const ih = Math.max(1, height - insets.top - insets.bottom);
+
   ctx.save();
-  ctx.scale(2, 2);
+  ctx.translate(insets.left, insets.top);
 
   if (activityType === 'shape-match') {
-    if (level === 1) drawShapeMatchLevel1(ctx, width, height);
-    else if (level === 2) drawShapeMatchLevel2(ctx, width, height);
-    else drawShapeMatchLevel3(ctx, width, height);
+    if (level === 1) drawShapeMatchLevel1(ctx, iw, ih);
+    else if (level === 2) drawShapeMatchLevel2(ctx, iw, ih);
+    else drawShapeMatchLevel3(ctx, iw, ih);
   } else if (activityType === 'color-by-number') {
-    if (level === 1) drawFlower(ctx, width * 0.5, height * 0.5, Math.min(width, height) * 0.28);
-    else if (level === 2) drawColorByNumberLevel2(ctx, width, height);
-    else drawRainbow(ctx, width * 0.5, height * 0.72, Math.min(width, height) * 0.32);
+    if (level === 1) drawFlower(ctx, iw * 0.5, ih * 0.48, Math.min(iw, ih) * 0.26);
+    else if (level === 2) drawColorByNumberLevel2(ctx, iw, ih);
+    else drawRainbow(ctx, iw * 0.5, ih * 0.7, Math.min(iw, ih) * 0.3);
   }
 
   ctx.restore();

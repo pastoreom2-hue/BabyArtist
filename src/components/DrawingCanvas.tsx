@@ -72,12 +72,17 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (!ctx) return;
 
     if (activityType === 'free-draw') {
-      ctx.clearRect(0, 0, template.width, template.height);
+      ctx.clearRect(0, 0, width, height);
       return;
     }
 
-    drawActivityTemplate(ctx, activityType, level, width, height);
-  }, [activityType, level]);
+    // Keep activity art inside the white board, clear of HUD / dock chrome
+    const insets = isFullscreen
+      ? { top: 64, right: 20, bottom: 112, left: 20 }
+      : { top: 72, right: 24, bottom: 108, left: 24 };
+
+    drawActivityTemplate(ctx, activityType, level, width, height, insets);
+  }, [activityType, level, isFullscreen]);
 
   const applyCanvasDimensions = useCallback(
     (width: number, height: number, preserveDrawing = true) => {
@@ -283,11 +288,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`canvas-container w-full h-full relative touch-none ${
+      className={`canvas-container w-full h-full relative touch-none overflow-hidden ${
         isFullscreen
           ? 'fs-canvas-inner bg-white'
-          : 'rounded-[2rem] shadow-2xl overflow-hidden border-2 border-gray-100 bg-white'
+          : 'rounded-[2rem] shadow-2xl border-2 border-gray-100 bg-white'
       }`}
+      data-testid="drawing-canvas"
     >
       {!isFullscreen && (
         <div className="canvas-golden-frame absolute inset-2 sm:inset-4 border-[4px] sm:border-[10px] border-yellow-400 rounded-[0.8rem] sm:rounded-[1.2rem] pointer-events-none z-[998] shadow-sm" />
@@ -301,74 +307,66 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }`}
       />
 
-      {isActivityMode && activityHint && !isFullscreen && (
-        <div
-          className="absolute z-[999] pointer-events-none top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4"
-        >
-          <div className="bg-white/95 backdrop-blur-sm border-2 border-blue-200 rounded-xl px-3 py-2 shadow-md max-w-md">
-            <p className="text-[10px] sm:text-xs font-black text-blue-700 uppercase tracking-wide mb-0.5">
-              {activityType === 'color-by-number' ? 'Color by Number' : 'Shape Match'} · Lvl {level}
-            </p>
-            <p className="text-xs sm:text-sm font-bold text-slate-700">{activityHint}</p>
-          </div>
-        </div>
-      )}
-
-      {colorLegend.length > 0 && !isFullscreen && (
-        <div
-          className="absolute z-[999] pointer-events-auto bottom-24 left-3 sm:bottom-28 sm:left-4"
-        >
-          <div className="bg-white/95 backdrop-blur-sm border-2 border-pink-200 rounded-xl p-2 shadow-lg">
-            <p className="text-[9px] font-black text-pink-600 uppercase mb-1.5 px-1">Color Guide</p>
-            <div className="flex flex-wrap gap-1 max-w-[10rem] sm:max-w-none">
-              {colorLegend.map(({ number, name, value }) => (
-                <button
-                  key={number}
-                  type="button"
-                  onClick={() => onColorChange?.(value)}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg hover:bg-pink-50 transition-colors min-h-[44px] sm:min-h-0"
-                  title={`Pick ${name} for #${number}`}
-                >
-                  <span
-                    className="w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center shadow"
-                    style={{ backgroundColor: value }}
-                  >
-                    {number}
-                  </span>
-                  <span className="text-[9px] font-bold text-gray-600 hidden sm:inline">{name}</span>
-                </button>
-              ))}
+      <div className="canvas-hud" data-testid="canvas-hud">
+        {isActivityMode && activityHint && (
+          <div className="canvas-hud__hint" data-testid="canvas-activity-hint">
+            <div className="canvas-hud-card canvas-hud-card--hint">
+              <p className="canvas-hud-card__eyebrow">
+                {activityType === 'color-by-number' ? 'Color by Number' : 'Shape Match'} · Lvl {level}
+              </p>
+              <p className="canvas-hud-card__text">{activityHint}</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div
-        className={`absolute z-[999] flex gap-2 sm:gap-4 pointer-events-auto ${
-          isFullscreen
-            ? 'fs-canvas-actions'
-            : 'bottom-6 right-6 sm:bottom-12 sm:right-12 lg:bottom-16 lg:right-16'
-        }`}
-        data-testid="fs-canvas-actions"
-      >
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleClear}
-          className="p-3 sm:p-4 lg:p-6 bg-white text-red-500 rounded-2xl sm:rounded-3xl shadow-2xl border-4 border-red-100 hover:bg-red-50 transition-all flex items-center justify-center ring-4 ring-white min-w-[44px] min-h-[44px]"
-          title="Clear Canvas"
+        {colorLegend.length > 0 && (
+          <div className="canvas-hud__legend" data-testid="canvas-color-legend">
+            <div className="canvas-hud-card canvas-hud-card--legend">
+              <p className="canvas-hud-card__eyebrow canvas-hud-card__eyebrow--pink">Color Guide</p>
+              <div className="canvas-hud-legend-row">
+                {colorLegend.map(({ number, name, value }) => (
+                  <button
+                    key={number}
+                    type="button"
+                    onClick={() => onColorChange?.(value)}
+                    className="canvas-hud-swatch"
+                    title={`Pick ${name} for #${number}`}
+                    aria-label={`Pick ${name} for number ${number}`}
+                  >
+                    <span className="canvas-hud-swatch__dot" style={{ backgroundColor: value }}>
+                      {number}
+                    </span>
+                    <span className="canvas-hud-swatch__name">{name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div
+          className={`canvas-hud__actions ${isFullscreen ? 'fs-canvas-actions' : ''}`}
+          data-testid="fs-canvas-actions"
         >
-          <Trash2 className="w-6 h-6 sm:w-8 sm:h-8" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleSave}
-          className="p-3 sm:p-4 lg:p-6 bg-pink-500 text-white rounded-2xl sm:rounded-3xl shadow-2xl border-4 border-pink-600 hover:bg-pink-600 transition-all flex items-center justify-center ring-4 ring-white min-w-[44px] min-h-[44px]"
-          title="Save Masterpiece"
-        >
-          <Save className="w-6 h-6 sm:w-8 sm:h-8" />
-        </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={handleClear}
+            className="canvas-hud-action canvas-hud-action--trash"
+            title="Clear Canvas"
+          >
+            <Trash2 className="canvas-hud-action__icon" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={handleSave}
+            className="canvas-hud-action canvas-hud-action--save"
+            title="Save Masterpiece"
+          >
+            <Save className="canvas-hud-action__icon" />
+          </motion.button>
+        </div>
       </div>
     </div>
   );

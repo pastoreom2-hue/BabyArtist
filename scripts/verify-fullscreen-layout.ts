@@ -107,8 +107,90 @@ async function enterFullscreen(page: Page): Promise<void> {
 }
 
 async function getRect(page: Page, selector: string): Promise<Rect | null> {
-  const box = await page.locator(selector).first().boundingBox();
+  const count = await page.locator(selector).count();
+  if (count === 0) return null;
+  const box = await page.locator(selector).first().boundingBox({ timeout: 3_000 }).catch(() => null);
   return rectFromBox(box);
+}
+
+async function selectActivity(page: Page, label: string): Promise<void> {
+  const btn = page.getByRole('button', { name: new RegExp(label, 'i') }).first();
+  await btn.waitFor({ state: 'visible', timeout: 15_000 });
+  await btn.click();
+  // Confirm HUD appears for activity modes that show a hint
+  await page.locator('[data-testid="canvas-activity-hint"]').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(250);
+}
+
+async function assertHudBound(
+  page: Page,
+  board: Rect,
+  dock: Rect | null,
+  results: CheckResult[],
+  prefix: string,
+): Promise<void> {
+  const canvas = await getRect(page, '[data-testid="drawing-canvas"]');
+  const hint = await getRect(page, '[data-testid="canvas-activity-hint"]');
+  const legend = await getRect(page, '[data-testid="canvas-color-legend"]');
+  const actions = await getRect(page, '[data-testid="fs-canvas-actions"]');
+  const bound = canvas ?? board;
+
+  results.push({
+    name: `${prefix}-canvas-inside-board`,
+    pass: !!canvas && isInsideContainer(canvas, board, 0),
+    detail: canvas
+      ? `canvas ${canvas.width.toFixed(0)}x${canvas.height.toFixed(0)} inside board`
+      : 'drawing-canvas missing',
+  });
+
+  if (hint) {
+    results.push({
+      name: `${prefix}-hint-inside-canvas`,
+      pass: isInsideContainer(hint, bound, 0),
+      detail: `hint [${hint.left.toFixed(0)},${hint.top.toFixed(0)}]`,
+    });
+    if (dock) {
+      results.push({
+        name: `${prefix}-hint-clear-of-dock`,
+        pass: !rectsOverlap(hint, dock, 2),
+        detail: 'hint does not overlap dock',
+      });
+    }
+  } else {
+    results.push({ name: `${prefix}-hint-exists`, pass: false, detail: 'activity hint missing' });
+  }
+
+  if (legend) {
+    results.push({
+      name: `${prefix}-legend-inside-canvas`,
+      pass: isInsideContainer(legend, bound, 0),
+      detail: `legend [${legend.left.toFixed(0)},${legend.top.toFixed(0)} ${legend.width.toFixed(0)}x${legend.height.toFixed(0)}]`,
+    });
+    if (dock) {
+      results.push({
+        name: `${prefix}-legend-clear-of-dock`,
+        pass: !rectsOverlap(legend, dock, 4),
+        detail: 'color guide clear of floating dock',
+      });
+    }
+    if (actions) {
+      results.push({
+        name: `${prefix}-legend-clear-of-actions`,
+        pass: !rectsOverlap(legend, actions, 4),
+        detail: 'color guide clear of save/trash',
+      });
+    }
+  } else if (prefix.includes('color')) {
+    results.push({ name: `${prefix}-legend-exists`, pass: false, detail: 'color guide missing' });
+  }
+
+  if (actions) {
+    results.push({
+      name: `${prefix}-actions-inside-canvas`,
+      pass: isInsideContainer(actions, bound, 0),
+      detail: 'actions inside white board',
+    });
+  }
 }
 
 async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number]): Promise<CheckResult[]> {
@@ -129,7 +211,6 @@ async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number
   const swatchCount = await page.locator('[data-testid="fs-floating-dock"] .fs-dock-swatch').count();
   const sizeCount = await page.locator('[data-testid="fs-floating-dock"] .fs-dock-size').count();
 
-  // Header chrome should be hidden in FS
   const appHeaderVisible = await page.locator('header').first().isVisible().catch(() => false);
   const activityStripVisible = await page
     .locator('button[title="Fullscreen Art Mode"]')
@@ -213,7 +294,6 @@ async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number
   });
 
   if (exitBtn && dock) {
-    // Exit is pinned in the dock chrome (not the scroll strip) — allow 4px tolerance
     const inside =
       exitBtn.left >= dock.left - 4 &&
       exitBtn.top >= dock.top - 4 &&
@@ -243,8 +323,30 @@ async function runViewportChecks(page: Page, viewport: (typeof VIEWPORTS)[number
     results.push({ name: 'canvas-actions-exist', pass: false, detail: 'fs-canvas-actions missing' });
   }
 
+  // Exit, pick activities in normal mode, re-enter FS and verify HUD bounds
   await page.locator('[data-testid="fs-exit-btn"]').click();
   await page.waitForTimeout(400);
+
+  await selectActivity(page, 'Color by Number');
+  await page.locator('button[title="Fullscreen Art Mode"]').click();
+  await page.locator('[data-testid="fs-board"]').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(400);
+  const boardCbn = (await getRect(page, '[data-testid="fs-board"]'))!;
+  const dockCbn = await getRect(page, '[data-testid="fs-floating-dock"]');
+  await assertHudBound(page, boardCbn, dockCbn, results, 'color-by-number');
+
+  await page.locator('[data-testid="fs-exit-btn"]').click();
+  await page.waitForTimeout(350);
+  await selectActivity(page, 'Shape Match');
+  await page.locator('button[title="Fullscreen Art Mode"]').click();
+  await page.locator('[data-testid="fs-board"]').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(400);
+  const boardSm = (await getRect(page, '[data-testid="fs-board"]'))!;
+  const dockSm = await getRect(page, '[data-testid="fs-floating-dock"]');
+  await assertHudBound(page, boardSm, dockSm, results, 'shape-match');
+
+  await page.locator('[data-testid="fs-exit-btn"]').click();
+  await page.waitForTimeout(350);
   const boardGone = (await page.locator('[data-testid="fs-board"]').count()) === 0;
   const fullscreenBtnVisible = await page.locator('button[title="Fullscreen Art Mode"]').isVisible();
   results.push({
