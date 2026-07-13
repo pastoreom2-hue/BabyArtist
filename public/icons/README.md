@@ -12,26 +12,28 @@ Put your brand logo here. The install icon on phones comes from these files.
 | `apple-touch-icon.png` | 180×180 | iPhone / iPad Safari |
 | `icon.svg` | vector | Source artwork (optional) |
 
-## Where to place your existing 512×512 logo
+## Where to place your existing logo (master source)
 
-1. Save your logo as a **square PNG** (512×512 recommended, transparent or solid OK).
-2. Copy it into this folder, e.g.:
+1. Save your logo as a **square PNG** (512×512+ recommended, transparent or solid OK).
+2. Put the **master** file outside `public/` (so it is not deployed or PWA-precached):
 
 ```text
-public/icons/logo-source.png
+brand/logo-source.png
 ```
 
-3. From the app root, generate all required sizes:
+Do **not** put large source art in `public/icons/` — files over 2 MiB break the Vercel/PWA build.
+
+3. From the app root, generate all required sizes into `public/icons/`:
 
 ```powershell
 cd babyartist*
-npm run icons:generate -- public/icons/logo-source.png
+npm run icons:generate
 ```
 
-Or generate from the built-in SVG placeholder:
+Or pass an explicit path:
 
 ```powershell
-npm run icons:generate
+npm run icons:generate -- brand/logo-source.png
 ```
 
 ## Tips for clean home-screen icons

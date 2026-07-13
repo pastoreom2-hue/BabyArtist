@@ -60,6 +60,8 @@ export default defineConfig(({mode}) => {
         },
         injectManifest: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp}'],
+          // Keep master brand art out of SW precache (also must not live under public/).
+          globIgnores: ['**/logo-source.png'],
         },
         devOptions: {
           enabled: false,

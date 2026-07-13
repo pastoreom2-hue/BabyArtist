@@ -2,7 +2,7 @@
  * Generate PWA PNG icons from a brand logo.
  *
  * Usage:
- *   npm run icons:generate -- public/icons/logo-source.png
+ *   npm run icons:generate -- brand/logo-source.png
  *   npm run icons:generate
  */
 import { chromium } from 'playwright';
@@ -14,6 +14,7 @@ import http from 'node:http';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const ICONS_DIR = path.join(ROOT, 'public', 'icons');
+const BRAND_DIR = path.join(ROOT, 'brand');
 const SVG_PATH = path.join(ICONS_DIR, 'icon.svg');
 
 const OUTPUTS = [
@@ -30,10 +31,13 @@ function resolveSource() {
     if (!fs.existsSync(abs)) throw new Error(`Source icon not found: ${abs}`);
     return abs;
   }
-  const preferred = path.join(ICONS_DIR, 'logo-source.png');
+  const preferred = path.join(BRAND_DIR, 'logo-source.png');
   if (fs.existsSync(preferred)) return preferred;
+  // Legacy path (must not stay under public/ — breaks Workbox 2 MiB limit)
+  const legacy = path.join(ICONS_DIR, 'logo-source.png');
+  if (fs.existsSync(legacy)) return legacy;
   if (fs.existsSync(SVG_PATH)) return SVG_PATH;
-  throw new Error('No logo-source.png or icon.svg found in public/icons');
+  throw new Error('No brand/logo-source.png or public/icons/icon.svg found');
 }
 
 function startStaticServer(filePath) {
