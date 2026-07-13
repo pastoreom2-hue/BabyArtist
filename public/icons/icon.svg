@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BabyArtist">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fefce8"/>
+      <stop offset="100%" stop-color="#fde68a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="168" fill="#ec4899"/>
+  <path d="M168 300c28 48 68 72 88 72s60-24 88-72" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="196" cy="220" r="22" fill="#fff"/>
+  <circle cx="316" cy="220" r="22" fill="#fff"/>
+  <path d="M320 140l24-52 16 48 48 10-42 28 14 48-44-26-44 26 14-48-42-28 48-10z" fill="#facc15" stroke="#f59e0b" stroke-width="8" stroke-linejoin="round"/>
+</svg>

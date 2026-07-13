@@ -74,8 +74,8 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         intro: 'Already have a paper drawing? Snap a photo and add it to your gallery.',
         bullets: [
           {
-            label: 'Upload Drawing',
-            text: 'Tap **Upload Drawing** in the top menu bar to take a photo or choose one from your gallery.',
+            label: 'Save Drawing',
+            text: 'Tap **Save Drawing** in the top menu bar to take a photo or choose one from your gallery.',
           },
           {
             label: 'Save from Canvas',
@@ -83,7 +83,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
           },
           {
             label: 'Pretty Frames',
-            text: 'Open **Gallery**, scroll the frame strip, and tap a wooden frame style to dress up any masterpiece.',
+            text: 'Open **Send Drawing**, scroll the frame strip, and tap a wooden frame style to dress up any masterpiece.',
           },
         ],
       },
@@ -94,7 +94,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: 'Share with Grandma',
-            text: 'Go to **Gallery** → pick a frame → tap **Share**, **Email**, or **Download**. Grandma gets a beautiful framed picture instantly!',
+            text: 'Go to **Send Drawing** → pick a frame → tap **Share**, **Email**, or **Download**. Grandma gets a beautiful framed picture instantly!',
           },
           {
             label: 'Quick Share Bar',
@@ -187,7 +187,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: '그림 올리기',
-            text: '상단 메뉴의 **Upload Drawing** 버튼으로 사진을 찍거나 앨범에서 고르세요.',
+            text: '상단 메뉴의 **Save Drawing** 버튼으로 사진을 찍거나 앨범에서 고르세요.',
           },
           {
             label: '캔버스 저장',
@@ -195,7 +195,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
           },
           {
             label: '예쁜 액자',
-            text: '**Gallery**로 이동해 액자 줄을 슥슥 넘기며 나무 액자를 골라 입혀 보세요.',
+            text: '**Send Drawing**으로 이동해 액자 줄을 슥슥 넘기며 나무 액자를 골라 입혀 보세요.',
           },
         ],
       },
@@ -206,7 +206,7 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: '할머니께 보내기',
-            text: '**Gallery** → 액자 선택 → **Share**, **Email**, **Download** 버튼을 눌러요. 할머니께 액자 그림이 바로 전달돼요!',
+            text: '**Send Drawing** → 액자 선택 → **Share**, **Email**, **Download** 버튼을 눌러요. 할머니께 액자 그림이 바로 전달돼요!',
           },
           {
             label: '빠른 공유 바',

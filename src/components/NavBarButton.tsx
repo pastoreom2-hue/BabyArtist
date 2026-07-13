@@ -1,35 +1,57 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
-export type NavVariant = 'draw' | 'gallery' | 'upload';
+export type NavVariant = 'draw' | 'save' | 'send';
 
+/**
+ * Vivacious kid-friendly themes — candy-bright, playful, easy to love.
+ */
 const VARIANT_STYLES: Record<
   NavVariant,
-  { active: string; inactive: string; iconActive: string; iconInactive: string }
+  { fill: string; glow: string; active: string }
 > = {
   draw: {
-    active: 'bg-pink-500 text-white border-pink-500 shadow-sm',
-    inactive: 'bg-white text-stone-600 border-stone-200 hover:border-pink-200 hover:text-pink-600',
-    iconActive: 'text-white',
-    iconInactive: 'text-pink-400',
+    // Juicy lime → bold mint green
+    fill: 'bg-gradient-to-b from-[#4AFF7A] via-[#00E676] to-[#00A83B]',
+    glow:
+      'shadow-[0_5px_0_0_#007A2A,0_8px_18px_-4px_rgba(0,140,50,0.55)] hover:shadow-[0_7px_0_0_#007A2A,0_12px_22px_-4px_rgba(0,140,50,0.6)]',
+    active: 'ring-[3px] ring-[#69F0AE] ring-offset-2 ring-offset-white',
   },
-  gallery: {
-    active: 'bg-emerald-500 text-white border-emerald-500 shadow-sm',
-    inactive: 'bg-white text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600',
-    iconActive: 'text-white',
-    iconInactive: 'text-emerald-400',
+  save: {
+    // Splashy sky → bold true blue
+    fill: 'bg-gradient-to-b from-[#40C4FF] via-[#0091EA] to-[#1565C0]',
+    glow:
+      'shadow-[0_5px_0_0_#0D47A1,0_8px_18px_-4px_rgba(21,101,192,0.55)] hover:shadow-[0_7px_0_0_#0D47A1,0_12px_22px_-4px_rgba(21,101,192,0.6)]',
+    active: 'ring-[3px] ring-[#80D8FF] ring-offset-2 ring-offset-white',
   },
-  upload: {
-    active: 'bg-sky-500 text-white border-sky-500 shadow-sm',
-    inactive: 'bg-white text-stone-600 border-stone-200 hover:border-sky-200 hover:text-sky-600',
-    iconActive: 'text-white',
-    iconInactive: 'text-sky-400',
+  send: {
+    // Candy pink → bold magenta
+    fill: 'bg-gradient-to-b from-[#FF5EC8] via-[#FF2D95] to-[#E0006E]',
+    glow:
+      'shadow-[0_5px_0_0_#AD0058,0_8px_18px_-4px_rgba(224,0,110,0.6)] hover:shadow-[0_7px_0_0_#AD0058,0_12px_22px_-4px_rgba(224,0,110,0.65)]',
+    active: 'ring-[3px] ring-[#FF80AB] ring-offset-2 ring-offset-white',
   },
 };
 
-/** Shared pill nav button — horizontal icon + label */
+/** Shared playful pill — identical size & bounce for all actions */
 export const NAV_BTN_BASE =
-  'inline-flex flex-row items-center justify-center gap-2 sm:gap-3 min-h-[3rem] sm:min-h-[3.25rem] px-5 sm:px-7 py-2.5 sm:py-3 rounded-full font-bold text-base sm:text-lg border transition-all select-none whitespace-nowrap w-full';
+  'group relative overflow-hidden inline-flex flex-row items-center justify-center gap-1.5 sm:gap-2 ' +
+  'h-12 sm:h-[3.6rem] px-2.5 sm:px-5 ' +
+  'rounded-full font-black text-[13px] sm:text-base tracking-normal text-white ' +
+  'border-[3px] border-white/70 ' +
+  'transition-all duration-200 ease-out select-none whitespace-nowrap w-full ' +
+  'hover:-translate-y-1 active:translate-y-0.5 active:shadow-none ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-2';
+
+const ShineOverlay = () => (
+  <>
+    {/* Soft candy gloss — light enough that letters stay clear */}
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-x-1 top-1 h-[38%] rounded-full bg-gradient-to-b from-white/50 to-transparent"
+    />
+  </>
+);
 
 interface NavBarButtonProps {
   icon: LucideIcon;
@@ -53,8 +75,6 @@ export const NavBarButton: React.FC<NavBarButtonProps> = ({
   'data-tour': dataTour,
 }) => {
   const styles = VARIANT_STYLES[variant];
-  const stateClass = isActive ? styles.active : styles.inactive;
-  const iconClass = isActive ? styles.iconActive : styles.iconInactive;
 
   return (
     <button
@@ -62,10 +82,18 @@ export const NavBarButton: React.FC<NavBarButtonProps> = ({
       onClick={onClick}
       data-tour={dataTour}
       data-nav-btn=""
-      className={`${NAV_BTN_BASE} ${stateClass} ${className}`}
+      aria-current={isActive ? 'page' : undefined}
+      className={`${NAV_BTN_BASE} ${styles.fill} ${styles.glow} ${isActive ? styles.active : ''} ${className}`}
     >
-      <Icon size={20} className={`flex-shrink-0 sm:w-[22px] sm:h-[22px] ${iconClass}`} strokeWidth={2.5} />
-      <span>{label}</span>
+      <ShineOverlay />
+      <Icon
+        size={20}
+        className="relative z-[1] flex-shrink-0 sm:w-[22px] sm:h-[22px]"
+        strokeWidth={2.75}
+      />
+      <span className="relative z-[1] [text-shadow:0_1px_0_rgba(0,0,0,0.25),0_2px_4px_rgba(0,0,0,0.2)]">
+        {label}
+      </span>
     </button>
   );
 };
@@ -93,10 +121,17 @@ export const NavBarLabelButton: React.FC<NavBarLabelButtonProps> = ({
     <label
       data-tour={dataTour}
       data-nav-btn=""
-      className={`${NAV_BTN_BASE} ${styles.inactive} cursor-pointer ${className}`}
+      className={`${NAV_BTN_BASE} ${styles.fill} ${styles.glow} cursor-pointer ${className}`}
     >
-      <Icon size={20} className={`flex-shrink-0 sm:w-[22px] sm:h-[22px] ${styles.iconInactive}`} strokeWidth={2.5} />
-      <span>{label}</span>
+      <ShineOverlay />
+      <Icon
+        size={20}
+        className="relative z-[1] flex-shrink-0 sm:w-[22px] sm:h-[22px]"
+        strokeWidth={2.75}
+      />
+      <span className="relative z-[1] [text-shadow:0_1px_0_rgba(0,0,0,0.25),0_2px_4px_rgba(0,0,0,0.2)]">
+        {label}
+      </span>
       {children}
     </label>
   );

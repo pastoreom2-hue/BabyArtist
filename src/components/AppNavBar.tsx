@@ -16,9 +16,9 @@ export const AppNavBar: React.FC<AppNavBarProps> = ({
 }) => (
   <nav
     aria-label="Main menu"
-    className="border-t border-stone-100 bg-stone-50/40 px-4 py-3 sm:py-4"
+    className="border-t border-amber-100 bg-gradient-to-b from-amber-50 via-yellow-50 to-lime-50/60 px-4 py-4 sm:py-5"
   >
-    <div className="max-w-3xl mx-auto grid grid-cols-3 gap-3 sm:gap-5">
+    <div className="max-w-3xl mx-auto grid grid-cols-3 gap-2.5 sm:gap-4 items-stretch">
       <NavBarButton
         icon={Palette}
         label="Start Drawing"
@@ -29,8 +29,8 @@ export const AppNavBar: React.FC<AppNavBarProps> = ({
       <PhotoUploadButton onUpload={onPhotoUpload} variant="nav" />
       <NavBarButton
         icon={ImageIcon}
-        label="Gallery"
-        variant="gallery"
+        label="Send Drawing"
+        variant="send"
         isActive={view === 'gallery'}
         onClick={() => onViewChange('gallery')}
       />

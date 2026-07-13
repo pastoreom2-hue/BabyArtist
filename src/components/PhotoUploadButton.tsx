@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Camera } from 'lucide-react';
+import { Save, Camera } from 'lucide-react';
 import { NavBarLabelButton } from './NavBarButton';
 
 interface PhotoUploadButtonProps {
@@ -37,16 +37,16 @@ export const PhotoUploadButton: React.FC<PhotoUploadButtonProps> = ({
       capture="environment"
       className="hidden"
       onChange={handleChange}
-      aria-label="Upload drawing photo"
+      aria-label="Save drawing photo"
     />
   );
 
   if (variant === 'nav') {
     return (
       <NavBarLabelButton
-        icon={Camera}
-        label="Upload Drawing"
-        variant="upload"
+        icon={Save}
+        label="Save Drawing"
+        variant="save"
         data-tour="tour-step-1"
         className={className}
       >
@@ -58,10 +58,16 @@ export const PhotoUploadButton: React.FC<PhotoUploadButtonProps> = ({
   return (
     <label
       data-tour="tour-step-1"
-      className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-2xl font-black shadow-lg border-4 border-sky-300 cursor-pointer select-none ${className}`}
+      className={`group relative overflow-hidden inline-flex items-center justify-center gap-2 h-12 sm:h-[3.6rem] px-5 rounded-full font-black text-[13px] sm:text-base tracking-normal text-white border-[3px] border-white/70 bg-gradient-to-b from-[#40C4FF] via-[#0091EA] to-[#1565C0] shadow-[0_5px_0_0_#0D47A1,0_8px_18px_-4px_rgba(21,101,192,0.55)] hover:shadow-[0_7px_0_0_#0D47A1,0_12px_22px_-4px_rgba(21,101,192,0.6)] hover:-translate-y-1 active:translate-y-0.5 active:shadow-none transition-all duration-200 ease-out cursor-pointer select-none ${className}`}
     >
-      <Camera size={22} className="flex-shrink-0" />
-      <span className="text-sm sm:text-base whitespace-nowrap">Upload Drawing</span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-1 top-1 h-[38%] rounded-full bg-gradient-to-b from-white/50 to-transparent"
+      />
+      <Camera size={20} className="relative z-[1] flex-shrink-0" strokeWidth={2.75} />
+      <span className="relative z-[1] whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.25),0_2px_4px_rgba(0,0,0,0.2)]">
+        Save Drawing
+      </span>
       {input}
     </label>
   );

@@ -13,13 +13,14 @@ import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { OnboardingTour } from './components/OnboardingTour';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
 import { HelpModal } from './components/HelpModal';
-import { HeaderIconButton } from './components/HeaderIconButton';
+import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { AppNavBar } from './components/AppNavBar';
+import { InstallAppPrompt } from './components/InstallAppPrompt';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
-import { LogIn, LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Star, X, Share2, Trophy, Pen, HelpCircle } from 'lucide-react';
+import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Star, X, Share2, Trophy, Pen, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const isCoarsePointer = () =>
@@ -357,10 +358,10 @@ export default function App() {
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:py-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="p-1.5 sm:p-2 bg-pink-500 rounded-lg sm:rounded-xl text-white flex-shrink-0">
-              <Palette className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2.25} />
+            <div className="p-1.5 sm:p-2 bg-gradient-to-b from-pink-400 to-fuchsia-500 rounded-xl sm:rounded-2xl text-white flex-shrink-0 border-[2.5px] border-white shadow-[0_3px_0_0_#db2777]">
+              <Palette className="w-6 h-6 sm:w-8 sm:h-8" strokeWidth={2.4} />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-pink-500 tracking-tight truncate">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight truncate bg-gradient-to-r from-pink-500 to-violet-500 bg-clip-text text-transparent">
               BabyArtist
             </h1>
           </div>
@@ -371,7 +372,7 @@ export default function App() {
               onClick={toggleMusic}
               title={isMusicPlaying ? 'Stop Music' : 'Play Music'}
               active={isMusicPlaying}
-              activeClass="bg-amber-100 text-amber-600 border-amber-200 animate-pulse"
+              tone="music"
               size="large"
             />
             <HeaderIconButton
@@ -379,7 +380,7 @@ export default function App() {
               onClick={() => setIsHelpOpen(true)}
               title="Help"
               active={isHelpOpen}
-              activeClass="bg-pink-100 text-pink-600 border-pink-200"
+              tone="help"
               size="large"
             />
             {user ? (
@@ -388,25 +389,24 @@ export default function App() {
                   <img
                     src={user.photoURL}
                     alt="Profile"
-                    className="w-8 h-8 rounded-full border border-stone-200 flex-shrink-0"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border-[2.5px] border-pink-200 shadow-sm flex-shrink-0"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500">
-                    <UserIcon size={15} />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-b from-fuchsia-100 to-pink-200 border-[2.5px] border-pink-200 flex items-center justify-center text-pink-600">
+                    <UserIcon size={16} strokeWidth={2.5} />
                   </div>
                 )}
-                <HeaderIconButton icon={LogOut} onClick={logOut} title="Logout" />
+                <HeaderIconButton
+                  icon={LogOut}
+                  onClick={logOut}
+                  title="Logout"
+                  tone="auth"
+                  size="large"
+                />
               </>
             ) : (
-              <button
-                type="button"
-                onClick={signIn}
-                className="h-10 sm:h-11 px-4 sm:px-6 flex items-center gap-2 rounded-full bg-stone-800 text-white text-base sm:text-lg font-bold hover:bg-stone-700 transition-colors"
-              >
-                <LogIn size={20} />
-                <span className="hidden sm:inline">Login</span>
-              </button>
+              <HeaderLoginButton onClick={signIn} />
             )}
           </div>
         </div>
@@ -860,6 +860,8 @@ export default function App() {
       />
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+      {!isFullscreen && <InstallAppPrompt />}
 
       <AdMobBanner hidden={isFullscreen} />
 
