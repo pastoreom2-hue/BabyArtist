@@ -75,11 +75,30 @@ function PlatformCard({
   );
 }
 
+function HelpIntroVideo() {
+  return (
+    <div className="help-intro-video" data-testid="help-intro-video">
+      <video
+        className="help-intro-video__media"
+        src="/videos/help-guide.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-label="BabyArtist animated logo introduction"
+      />
+    </div>
+  );
+}
+
 function HelpGuideBody({ lang, appUrl }: { lang: HelpLang; appUrl: string }) {
   const copy = HELP_GUIDE[lang];
 
   return (
     <div className="space-y-5">
+      <HelpIntroVideo />
+
       {copy.sections.map((section, idx) => {
         const Icon = SECTION_ICONS[idx] ?? Palette;
         return (

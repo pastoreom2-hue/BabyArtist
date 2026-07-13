@@ -734,3 +734,36 @@
     top: calc(var(--app-header-height) + 1rem);
   }
 }
+
+/* Help guide intro video (animated logo) */
+.help-intro-video {
+  width: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff7ed 0%, #fef3c7 100%);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.help-intro-video__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(42vw, 220px);
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+  vertical-align: middle;
+}
+
+@media (min-width: 640px) {
+  .help-intro-video__media {
+    max-height: 240px;
+  }
+}
+
+@media (min-width: 768px) {
+  .help-intro-video__media {
+    max-height: 260px;
+  }
+}
