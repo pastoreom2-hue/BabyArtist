@@ -301,13 +301,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }`}
       />
 
-      {isActivityMode && activityHint && (
+      {isActivityMode && activityHint && !isFullscreen && (
         <div
-          className={`absolute z-[999] pointer-events-none ${
-            isFullscreen
-              ? 'fs-activity-hint'
-              : 'top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4'
-          }`}
+          className="absolute z-[999] pointer-events-none top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4"
         >
           <div className="bg-white/95 backdrop-blur-sm border-2 border-blue-200 rounded-xl px-3 py-2 shadow-md max-w-md">
             <p className="text-[10px] sm:text-xs font-black text-blue-700 uppercase tracking-wide mb-0.5">
@@ -318,11 +314,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </div>
       )}
 
-      {colorLegend.length > 0 && (
+      {colorLegend.length > 0 && !isFullscreen && (
         <div
-          className={`absolute z-[999] pointer-events-auto ${
-            isFullscreen ? 'fs-color-legend' : 'bottom-24 left-3 sm:bottom-28 sm:left-4'
-          }`}
+          className="absolute z-[999] pointer-events-auto bottom-24 left-3 sm:bottom-28 sm:left-4"
         >
           <div className="bg-white/95 backdrop-blur-sm border-2 border-pink-200 rounded-xl p-2 shadow-lg">
             <p className="text-[9px] font-black text-pink-600 uppercase mb-1.5 px-1">Color Guide</p>

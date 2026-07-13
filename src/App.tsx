@@ -20,7 +20,7 @@ import { InstallAppPrompt } from './components/InstallAppPrompt';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
-import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Minimize2, Music, Star, X, Share2, Trophy, Pen, HelpCircle } from 'lucide-react';
+import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const isCoarsePointer = () =>
@@ -86,7 +86,6 @@ export default function App() {
   const [activeTool, setActiveTool] = useState<'pen' | 'sticker'>('pen');
   const [selectedSticker, setSelectedSticker] = useState<Sticker | null>(STICKERS[0]);
   const [dailyChallenge, setDailyChallenge] = useState("");
-  const [isFullscreenUIHidden, setIsFullscreenUIHidden] = useState(false);
   const [selectedFrame, setSelectedFrame] = useState<FrameId>(loadStoredFrame);
   const [showTour, setShowTour] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -198,7 +197,6 @@ export default function App() {
         (document as any).webkitExitFullscreen();
       }
       setIsFullscreen(false);
-      setIsFullscreenUIHidden(false);
     }
   };
 
@@ -206,9 +204,6 @@ export default function App() {
     const handleFullscreenChange = () => {
       const isCurrentlyFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
       setIsFullscreen(isCurrentlyFs);
-      if (!isCurrentlyFs) {
-        setIsFullscreenUIHidden(false);
-      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -485,73 +480,18 @@ export default function App() {
                       />
                     </div>
 
-                    <div
-                      className={`fs-board__ui ${isFullscreenUIHidden ? 'fs-board__ui--tools-hidden' : ''}`}
-                    >
-                      <div className="fs-overlay-header landscape-compact-header" data-testid="fs-overlay-header">
-                        <div className="fs-header-controls">
-                          <button
-                            type="button"
-                            onClick={() => setIsFullscreenUIHidden(!isFullscreenUIHidden)}
-                            className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all shadow-lg border-2 flex items-center gap-2 ${
-                              isFullscreenUIHidden
-                                ? 'bg-blue-500 border-blue-600 text-white'
-                                : 'bg-white/95 backdrop-blur-sm border-blue-100 text-blue-500'
-                            }`}
-                            title={isFullscreenUIHidden ? 'Show Artist Tools' : 'Focus on Drawing (Hide Tools)'}
-                          >
-                            <Pen size={20} className={isFullscreenUIHidden ? 'opacity-50' : 'opacity-100'} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={toggleMusic}
-                            className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all shadow-lg border-2 flex items-center gap-2 ${
-                              isMusicPlaying
-                                ? 'bg-yellow-400 border-yellow-500 text-white'
-                                : 'bg-white/95 backdrop-blur-sm border-amber-100 text-amber-500'
-                            }`}
-                            title={isMusicPlaying ? 'Stop Music' : 'Play Music'}
-                          >
-                            <Music size={20} className={isMusicPlaying ? 'animate-bounce' : ''} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={toggleFullscreen}
-                            className="p-2 sm:p-3 bg-white/95 backdrop-blur-sm text-blue-600 rounded-xl sm:rounded-2xl shadow-lg border-2 border-blue-100 hover:bg-blue-50 transition-all"
-                            title="Exit Fullscreen"
-                          >
-                            <Minimize2 size={20} />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="fs-overlay-toolbar scroll-region scrollbar-hide landscape-compact-toolbar" data-testid="fs-overlay-toolbar">
-                        <div className="fs-toolbar-panel">
-                          <Toolbar
-                            currentColor={currentColor}
-                            onColorChange={setCurrentColor}
-                            brushSize={brushSize}
-                            onBrushSizeChange={setBrushSize}
-                            activeTool={activeTool}
-                            onToolChange={setActiveTool}
-                            selectedSticker={selectedSticker}
-                            onStickerChange={setSelectedSticker}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="fs-overlay-nav landscape-compact-switcher" data-testid="fs-overlay-nav">
-                        <div className="fs-nav-panel">
-                          <ActivitySelector
-                            variant="fullscreen"
-                            activeActivity={activeActivity}
-                            onActivityChange={setActiveActivity}
-                            activeLevel={activeLevel}
-                            onLevelChange={setActiveLevel}
-                            onShowChallenge={() => setIsChallengeOpen(true)}
-                          />
-                        </div>
-                      </div>
+                    {/* Canvas-only chrome: exit control only */}
+                    <div className="fs-board__ui" data-testid="fs-board-ui">
+                      <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="fs-exit-btn"
+                        title="Exit Fullscreen"
+                        aria-label="Exit Fullscreen"
+                        data-testid="fs-exit-btn"
+                      >
+                        <X size={16} strokeWidth={2.5} aria-hidden />
+                      </button>
                     </div>
 
                     <AnimatePresence>
@@ -853,7 +793,7 @@ export default function App() {
       </main>
 
       <OnboardingTour
-        isOpen={showTour}
+        isOpen={showTour && !isFullscreen}
         onClose={() => setShowTour(false)}
         currentView={view}
         onChangeView={setView}
