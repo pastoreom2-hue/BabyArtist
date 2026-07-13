@@ -1,16 +1,15 @@
 /**
- * Generate PWA PNG icons from public/icons/icon.svg (or a branded PNG).
+ * Generate PWA PNG icons from a brand logo.
  *
- * Default (no args): rasterizes the SVG placeholder into:
- *   - icon-192.png, icon-512.png, icon-512-maskable.png, apple-touch-icon.png
- *
- * Replace branding:
- *   node scripts/generate-pwa-icons.mjs path/to/your-512x512-logo.png
+ * Usage:
+ *   npm run icons:generate -- public/icons/logo-source.png
+ *   npm run icons:generate
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import http from 'node:http';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -24,97 +23,139 @@ const OUTPUTS = [
   { file: 'apple-touch-icon.png', size: 180, maskable: false },
 ];
 
-function readSourceImage() {
+function resolveSource() {
   const arg = process.argv[2];
   if (arg) {
     const abs = path.resolve(process.cwd(), arg);
-    if (!fs.existsSync(abs)) {
-      throw new Error(`Source icon not found: ${abs}`);
-    }
-    const buf = fs.readFileSync(abs);
-    const ext = path.extname(abs).toLowerCase();
-    const mime =
-      ext === '.svg'
-        ? 'image/svg+xml'
-        : ext === '.jpg' || ext === '.jpeg'
-          ? 'image/jpeg'
-          : 'image/png';
-    return { dataUrl: `data:${mime};base64,${buf.toString('base64')}`, label: abs };
+    if (!fs.existsSync(abs)) throw new Error(`Source icon not found: ${abs}`);
+    return abs;
   }
-
-  if (!fs.existsSync(SVG_PATH)) {
-    throw new Error(`Missing ${SVG_PATH}. Place icon.svg there first.`);
-  }
-  const svg = fs.readFileSync(SVG_PATH);
-  return {
-    dataUrl: `data:image/svg+xml;base64,${svg.toString('base64')}`,
-    label: SVG_PATH,
-  };
+  const preferred = path.join(ICONS_DIR, 'logo-source.png');
+  if (fs.existsSync(preferred)) return preferred;
+  if (fs.existsSync(SVG_PATH)) return SVG_PATH;
+  throw new Error('No logo-source.png or icon.svg found in public/icons');
 }
 
-async function renderIcon(page, dataUrl, size, maskable) {
-  const html = `<!doctype html>
-<html><body style="margin:0;background:#0000">
+function startStaticServer(filePath) {
+  const mime = filePath.toLowerCase().endsWith('.svg')
+    ? 'image/svg+xml'
+    : filePath.toLowerCase().endsWith('.jpg') || filePath.toLowerCase().endsWith('.jpeg')
+      ? 'image/jpeg'
+      : filePath.toLowerCase().endsWith('.webp')
+        ? 'image/webp'
+        : 'image/png';
+  const body = fs.readFileSync(filePath);
+
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (req.url?.startsWith('/logo')) {
+      res.writeHead(200, {
+        'Content-Type': mime,
+        'Content-Length': body.length,
+        'Cache-Control': 'no-store',
+        'Access-Control-Allow-Origin': '*',
+      });
+      res.end(body);
+      return;
+    }
+    if (req.url === '/' || req.url?.startsWith('/render')) {
+      const size = Number(new URL(req.url, 'http://x').searchParams.get('size') || 512);
+      const maskable = new URL(req.url, 'http://x').searchParams.get('maskable') === '1';
+      const html = `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:${size}px;height:${size}px;background:#fff;overflow:hidden}
+canvas{display:block}
+</style></head>
+<body>
 <canvas id="c" width="${size}" height="${size}"></canvas>
 <script>
-const size = ${size};
-const maskable = ${maskable ? 'true' : 'false'};
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const img = new Image();
-img.onload = () => {
-  ctx.clearRect(0, 0, size, size);
-  if (maskable) {
-    // Safe zone ~80% center for Android adaptive icons
-    const pad = size * 0.1;
-    const draw = size - pad * 2;
-    // Soft brand background fills full maskable canvas
-    const g = ctx.createLinearGradient(0, 0, size, size);
-    g.addColorStop(0, '#fefce8');
-    g.addColorStop(1, '#fde68a');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-    ctx.drawImage(img, pad, pad, draw, draw);
-  } else {
-    ctx.drawImage(img, 0, 0, size, size);
-  }
+(async () => {
+  const size = ${size};
+  const maskable = ${maskable ? 'true' : 'false'};
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = '/logo?ts=' + Date.now();
+  });
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  const srcW = img.naturalWidth;
+  const srcH = img.naturalHeight;
+  const inset = maskable ? size * 0.08 : size * 0.02;
+  const box = size - inset * 2;
+  const scale = Math.min(box / srcW, box / srcH);
+  const dw = srcW * scale;
+  const dh = srcH * scale;
+  const dx = (size - dw) / 2;
+  const dy = (size - dh) / 2;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, dx, dy, dw, dh);
   window.__ready = true;
-};
-img.onerror = () => { window.__ready = 'error'; };
-img.src = ${JSON.stringify(dataUrl)};
+})().catch((e) => { window.__ready = 'error'; window.__err = String(e); });
 </script>
 </body></html>`;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+      return;
+    }
+    res.writeHead(404);
+    res.end('not found');
+  });
 
-  await page.setContent(html, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window.__ready === true || window.__ready === 'error');
-  const status = await page.evaluate(() => window.__ready);
-  if (status === 'error') throw new Error('Failed to load source image in canvas');
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      resolve({ server, port });
+    });
+  });
+}
 
-  const buffer = await page.locator('canvas').screenshot({ type: 'png', omitBackground: false });
-  return buffer;
+async function renderIcon(page, port, size, maskable) {
+  const url = `http://127.0.0.1:${port}/render?size=${size}&maskable=${maskable ? 1 : 0}`;
+  await page.setViewportSize({ width: size, height: size });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.waitForFunction(() => window.__ready === true || window.__ready === 'error', null, {
+    timeout: 60_000,
+  });
+  const status = await page.evaluate(() => ({ ready: window.__ready, err: window.__err || null }));
+  if (status.ready === 'error') throw new Error(`Render failed: ${status.err}`);
+
+  const dataUrl = await page.evaluate(() => document.getElementById('c').toDataURL('image/png'));
+  const base64 = dataUrl.replace(/^data:image\/png;base64,/, '');
+  return Buffer.from(base64, 'base64');
 }
 
 async function main() {
   fs.mkdirSync(ICONS_DIR, { recursive: true });
-  const source = readSourceImage();
-  console.log(`Source: ${source.label}`);
+  const sourcePath = resolveSource();
+  console.log(`Source: ${sourcePath}`);
 
+  const { server, port } = await startStaticServer(sourcePath);
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
   try {
     for (const out of OUTPUTS) {
-      const buf = await renderIcon(page, source.dataUrl, out.size, out.maskable);
+      const buf = await renderIcon(page, port, out.size, out.maskable);
+      if (buf.length < 8000) {
+        throw new Error(`Suspiciously small output for ${out.file}: ${buf.length} bytes`);
+      }
       const dest = path.join(ICONS_DIR, out.file);
       fs.writeFileSync(dest, buf);
-      console.log(`Wrote ${path.relative(ROOT, dest)} (${out.size}x${out.size}${out.maskable ? ', maskable' : ''})`);
+      console.log(
+        `Wrote ${path.relative(ROOT, dest)} (${out.size}x${out.size}${out.maskable ? ', maskable' : ''}, ${buf.length} bytes)`,
+      );
     }
   } finally {
     await browser.close();
+    server.close();
   }
 
-  console.log('\nDone. Replace branding anytime with:');
-  console.log('  npm run icons:generate -- path/to/your-512x512-logo.png');
+  console.log('\nDone.');
 }
 
 main().catch((err) => {
