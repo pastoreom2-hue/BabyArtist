@@ -11,7 +11,7 @@ export function generateTempArtworkName(date = new Date()): string {
   return `my-art-${y}${m}${d}-${h}${min}${s}.png`;
 }
 
-/** Always returns a non-empty `*.png` filename safe for downloads / Web Share. */
+/** Always returns a non-empty `*.png` filename safe for downloads. */
 export function sanitizeArtworkFilename(name: string | undefined | null): string {
   const raw = (name ?? '').trim();
   const fallback = generateTempArtworkName();

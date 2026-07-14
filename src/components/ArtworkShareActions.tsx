@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Download, Mail, Share2, Loader2 } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import { FrameId } from '../frames';
-import {
-  createFramedImageBlob,
-  downloadFramedImage,
-  shareFramedImage,
-  shareFramedImageByEmail,
-} from '../utils/framedExport';
 import { sanitizeArtworkFilename } from '../utils/artworkNaming';
+import { downloadDataUrl } from '../utils/downloadDataUrl';
+import { createFramedPngBlob } from '../utils/frameExport';
 
 interface ArtworkShareActionsProps {
   dataUrl: string;
@@ -17,141 +12,127 @@ interface ArtworkShareActionsProps {
   className?: string;
 }
 
-const FRIENDLY_SAVE_ERROR = "Oops! Let's try saving again";
+const MAIL_SUBJECT = 'Check out my new drawing!';
+const MAIL_BODY =
+  "I've saved my drawing and attached it. Please check the attachment!";
 
+const KAKAO_ATTACH_TIP =
+  '그림 파일이 저장됐어요!\n\n' +
+  '카카오톡에서는 붙여넣기(Paste)가 안 됩니다.\n' +
+  '채팅방 → + → 앨범/파일 에서 방금 저장된 사진을 첨부해 주세요.';
+
+/** True phones/tablets where KakaoTalk can receive a shared File. */
+function isMobileShareDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+  // iPadOS desktop UA
+  if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
+  return window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 1024;
+}
+
+function canShareFiles(file: File): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    return false;
+  }
+  try {
+    if (typeof navigator.canShare !== 'function') return true;
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+function openMailto() {
+  const href = `mailto:?subject=${encodeURIComponent(MAIL_SUBJECT)}&body=${encodeURIComponent(MAIL_BODY)}`;
+  window.location.href = href;
+}
+
+function downloadFramedBuffer(buffer: ArrayBuffer, name: string) {
+  const url = URL.createObjectURL(new Blob([buffer], { type: 'image/png' }));
+  downloadDataUrl(url, name);
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/**
+ * Hybrid Send (KakaoTalk-safe):
+ * - Mobile: native share sheet with a real PNG File (pick KakaoTalk — do not pick Copy)
+ * - PC: download PNG + tip to attach from album (paste never works in KakaoTalk)
+ */
 export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
   dataUrl,
   title,
   frameId,
   className = '',
 }) => {
-  const [loading, setLoading] = useState<string | null>(null);
-  const [preparing, setPreparing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const filename = sanitizeArtworkFilename(title);
 
-  const run = async (key: string, fn: () => Promise<void>) => {
-    setLoading(key);
-    setPreparing(false);
+  const handleSend = async () => {
+    if (busy) return;
+    setBusy(true);
     try {
-      await fn();
+      const blob = await createFramedPngBlob(dataUrl, frameId);
+      const name = filename.replace(/\.png$/i, '') + '-framed.png';
+      const buffer = await blob.arrayBuffer();
+      if (buffer.byteLength === 0) throw new Error('Empty PNG');
+
+      // Fresh File from bytes — required for KakaoTalk / mail attachments
+      const file = new File([buffer], name, {
+        type: 'image/png',
+        lastModified: Date.now(),
+      });
+      if (file.size === 0) throw new Error('Empty PNG');
+
+      const useNativeShare = isMobileShareDevice() && canShareFiles(file);
+
+      if (useNativeShare) {
+        try {
+          // Files only — KakaoTalk receives the image; Copy is a dead-end for paste
+          await navigator.share({ files: [file] });
+          return;
+        } catch (err) {
+          if ((err as Error).name === 'AbortError') return;
+          // Fall through to download backup
+        }
+      }
+
+      // Desktop (or share failed): save file — never claim clipboard paste works
+      downloadFramedBuffer(buffer, name);
+      alert(KAKAO_ATTACH_TIP);
+      // Optional email backup after user dismisses tip
+      openMailto();
     } catch (e) {
       console.error(e);
-      alert(FRIENDLY_SAVE_ERROR);
+      alert(
+        '그림을 준비하지 못했어요. 다시 한 번 Send를 눌러 주세요.\n' +
+          '그래도 안 되면 Download 대신 Save로 저장한 뒤 카카오톡에서 앨범 첨부를 이용해 주세요.'
+      );
     } finally {
-      setLoading(null);
-      setPreparing(false);
+      setBusy(false);
     }
   };
 
-  const prepareOpts = {
-    onPreparing: () => setPreparing(true),
-    preparingDelayMs: 1000,
-  };
-
-  const safeTitle = sanitizeArtworkFilename(title);
-
-  const btnClass =
-    'w-10 h-10 rounded-full border border-stone-200 bg-white shadow-sm transition-all flex items-center justify-center disabled:opacity-50 hover:border-stone-300 min-w-[44px] min-h-[44px]';
-
   return (
     <div
-      className={`relative flex flex-col items-center justify-center gap-2 ${className}`}
+      className={`flex flex-col items-center justify-center gap-1.5 ${className}`}
       data-testid="artwork-share-actions"
     >
-      <div className="flex items-center justify-center gap-2">
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.95 }}
-          disabled={!!loading}
-          title="Share (framed)"
-          aria-label="Share framed drawing"
-          data-testid="share-sns-btn"
-          onClick={() =>
-            run('sns', async () => {
-              const result = await shareFramedImage(dataUrl, frameId, safeTitle, prepareOpts);
-              if (result === 'downloaded') {
-                alert(
-                  'Framed image saved to your device! Open Messages / KakaoTalk and attach that photo to send.'
-                );
-              }
-            })
-          }
-          className={`${btnClass} text-emerald-600 hover:bg-emerald-50`}
-        >
-          {loading === 'sns' && !preparing ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <Share2 size={18} />
-          )}
-        </motion.button>
-
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.95 }}
-          disabled={!!loading}
-          title="Email (framed)"
-          aria-label="Email framed drawing"
-          data-testid="share-email-btn"
-          onClick={() =>
-            run('email', async () => {
-              const result = await shareFramedImageByEmail(
-                dataUrl,
-                frameId,
-                safeTitle,
-                prepareOpts
-              );
-              if (result === 'downloaded') {
-                alert(
-                  'Framed image downloaded. Please attach that PNG file in your email composer.'
-                );
-              }
-            })
-          }
-          className={`${btnClass} text-blue-600 hover:bg-blue-50`}
-        >
-          {loading === 'email' && !preparing ? (
-            <Loader2 size={18} className="animate-spin" />
-          ) : (
-            <Mail size={18} />
-          )}
-        </motion.button>
-
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.95 }}
-          disabled={!!loading}
-          title="Download (framed)"
-          aria-label="Download framed drawing"
-          data-testid="share-download-btn"
-          onClick={() =>
-            run('save', async () => {
-              const blob = await createFramedImageBlob(dataUrl, frameId);
-              if (!blob || blob.size <= 0) throw new Error('Empty image blob');
-              downloadFramedImage(blob, safeTitle);
-            })
-          }
-          className={`${btnClass} text-stone-600 hover:bg-stone-50`}
-        >
-          {loading === 'save' ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-        </motion.button>
-      </div>
-
-      <AnimatePresence>
-        {preparing && (
-          <motion.div
-            key="share-preparing"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -2 }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-stone-800/90 text-white text-[11px] font-semibold shadow-md"
-            role="status"
-            aria-live="polite"
-            data-testid="share-preparing"
-          >
-            <Loader2 size={12} className="animate-spin" aria-hidden />
-            Preparing your drawing…
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void handleSend()}
+        title="Send drawing"
+        aria-label="Send drawing"
+        data-testid="share-send-btn"
+        className="inline-flex items-center justify-center gap-2 h-11 min-w-[44px] px-5 rounded-full border border-stone-200 bg-white text-pink-600 text-sm font-bold shadow-sm hover:bg-pink-50 hover:border-pink-200 disabled:opacity-60 transition-colors"
+      >
+        {busy ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+        Send
+      </button>
+      <p className="text-[10px] text-stone-400 text-center max-w-[14rem] leading-snug">
+        카카오톡: 공유 시트에서 카톡 선택 (Copy/붙여넣기 ❌ · 파일 첨부 ✅)
+      </p>
     </div>
   );
 };

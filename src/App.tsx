@@ -13,13 +13,19 @@ import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { OnboardingTour } from './components/OnboardingTour';
 import { FullscreenDock } from './components/FullscreenDock';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
+import { ShareHowToCard } from './components/ShareHowToCard';
 import { HelpModal } from './components/HelpModal';
 import { SaveArtworkDialog } from './components/SaveArtworkDialog';
 import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { AppNavBar, type AppView } from './components/AppNavBar';
 import { SavedDrawingsPanel } from './components/SavedDrawingsPanel';
+import { RecentDrawings } from './components/RecentDrawings';
 import { InstallAppPrompt } from './components/InstallAppPrompt';
+import {
+  migrateLocalStorageToIdbIfEmpty,
+  saveDrawingToIdb,
+} from './utils/artworkIdb';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
@@ -30,7 +36,7 @@ import {
   sanitizeArtworkFilename,
   type LocalArtwork,
 } from './utils/artworkNaming';
-import { forceDownloadDataUrl } from './utils/forceDownload';
+import { downloadDataUrl } from './utils/downloadDataUrl';
 import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -93,7 +99,13 @@ export default function App() {
   const [autoArtworkName, setAutoArtworkName] = useState('');
   const [pendingSave, setPendingSave] = useState<{ dataUrl: string; defaultName: string } | null>(null);
   const [saveBannerError, setSaveBannerError] = useState<string | null>(null);
-  const [view, setView] = useState<AppView>('draw');
+  const [recentRefreshKey, setRecentRefreshKey] = useState(0);
+  const [view, setView] = useState<AppView>(() => {
+    if (typeof window === 'undefined') return 'draw';
+    const path = window.location.pathname.replace(/\/+$/, '');
+    if (path === '/gallery' || window.location.hash === '#gallery') return 'gallery';
+    return 'draw';
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChallengeOpen, setIsChallengeOpen] = useState(false);
@@ -123,6 +135,10 @@ export default function App() {
       setSavedArt(localArt);
     }
 
+    void migrateLocalStorageToIdbIfEmpty(localArt).then(() => {
+      setRecentRefreshKey((k) => k + 1);
+    });
+
     return () => {
       unsubscribe();
     };
@@ -131,6 +147,37 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(FRAME_STORAGE_KEY, selectedFrame);
   }, [selectedFrame]);
+
+  // Keep /gallery in the URL when browsing the gallery
+  useEffect(() => {
+    const next =
+      view === 'gallery' || view === 'saved'
+        ? '/gallery'
+        : '/';
+    if (window.location.pathname !== next) {
+      window.history.replaceState(null, '', next);
+    }
+    if (view === 'gallery' || view === 'saved') {
+      window.scrollTo(0, 0);
+      document.getElementById('root')?.scrollTo?.(0, 0);
+      requestAnimationFrame(() => {
+        document.getElementById('share-howto-card')?.scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        });
+      });
+    }
+  }, [view]);
+
+  useEffect(() => {
+    const onPop = () => {
+      const path = window.location.pathname.replace(/\/+$/, '') || '/';
+      if (path === '/gallery') setView('gallery');
+      else setView('draw');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   useEffect(() => {
     if (!isAuthReady || isTourCompleted()) return;
@@ -222,13 +269,13 @@ export default function App() {
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-
+    
     // Touch guards — coarse-pointer devices only (phones/tablets, not desktop mice)
     const preventZoom = (e: TouchEvent) => {
       if (!isCoarsePointer()) return;
       if (e.touches.length > 1) e.preventDefault();
     };
-
+    
     let lastTouchEnd = 0;
     const preventDoubleTap = (e: TouchEvent) => {
       if (!isCoarsePointer()) return;
@@ -311,8 +358,10 @@ export default function App() {
       setSavedArt(newArt);
       persistLocalArtworks(newArt);
 
-      // Device file: force Save → Downloads (not Open / image viewer)
-      await forceDownloadDataUrl(dataUrl, title);
+      await saveDrawingToIdb(dataUrl, title, Date.now());
+      setRecentRefreshKey((k) => k + 1);
+
+      downloadDataUrl(dataUrl, title);
 
       confetti({
         particleCount: 150,
@@ -321,20 +370,20 @@ export default function App() {
         colors: COLORS.map((c) => c.value),
       });
 
-      setView('saved');
+      setView('gallery');
 
-      if (user) {
-        try {
-          await addDoc(collection(db, 'artworks'), {
-            title,
-            dataUrl,
-            userId: user.uid,
-            userName: user.displayName,
-            createdAt: serverTimestamp(),
+    if (user) {
+      try {
+        await addDoc(collection(db, 'artworks'), {
+          title,
+          dataUrl,
+          userId: user.uid,
+          userName: user.displayName,
+          createdAt: serverTimestamp(),
             dateTag,
             isShared: false,
-          });
-        } catch (error) {
+        });
+      } catch (error) {
           console.error('Cloud save failed, but local save succeeded:', error);
         }
       }
@@ -456,6 +505,12 @@ export default function App() {
         </div>
 
         <AppNavBar view={view} onViewChange={setView} />
+        {!isFullscreen && (view === 'gallery' || view === 'saved') && (
+          <div className="px-3 sm:px-4 pb-3 pt-1 max-w-3xl mx-auto w-full">
+            <ShareHowToCard />
+          </div>
+        )}
+        {!isFullscreen && <RecentDrawings refreshKey={recentRefreshKey} />}
       </header>
 
       <main
@@ -488,14 +543,14 @@ export default function App() {
                   <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-lime-50/80 px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <ActivitySelector
-                          activeActivity={activeActivity}
-                          onActivityChange={setActiveActivity}
-                          activeLevel={activeLevel}
-                          onLevelChange={setActiveLevel}
-                          onShowChallenge={() => setIsChallengeOpen(true)}
-                        />
-                      </div>
+                         <ActivitySelector 
+                            activeActivity={activeActivity} 
+                            onActivityChange={setActiveActivity} 
+                            activeLevel={activeLevel}
+                            onLevelChange={setActiveLevel}
+                            onShowChallenge={() => setIsChallengeOpen(true)}
+                          />
+                       </div>
                       <button
                         type="button"
                         onClick={toggleFullscreen}
@@ -560,13 +615,13 @@ export default function App() {
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             className="w-full max-w-md p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2.5rem] shadow-2xl text-white border-4 border-white relative"
                           >
-                            <button
+                    <button
                               type="button"
                               onClick={() => setIsChallengeOpen(false)}
                               className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
                             >
                               <X size={20} />
-                            </button>
+                    </button>
                             <div className="flex flex-col items-center text-center gap-4">
                               <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm shadow-inner">
                                 <Trophy size={48} className="text-yellow-300 animate-bounce" />
@@ -601,45 +656,45 @@ export default function App() {
                 <div className="app-draw-grid grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 lg:gap-8 flex-1 relative">
                   <div className="app-sidebar-panel md:col-span-1 order-2 md:order-1 flex flex-col gap-4">
                     <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm">
-                      <Toolbar
-                        currentColor={currentColor}
-                        onColorChange={setCurrentColor}
-                        brushSize={brushSize}
-                        onBrushSizeChange={setBrushSize}
-                        activeTool={activeTool}
-                        onToolChange={setActiveTool}
-                        selectedSticker={selectedSticker}
-                        onStickerChange={setSelectedSticker}
-                      />
-                    </div>
-
+                        <Toolbar
+                          currentColor={currentColor}
+                          onColorChange={setCurrentColor}
+                          brushSize={brushSize}
+                          onBrushSizeChange={setBrushSize}
+                          activeTool={activeTool}
+                          onToolChange={setActiveTool}
+                          selectedSticker={selectedSticker}
+                          onStickerChange={setSelectedSticker}
+                        />
+                      </div>
+                      
                     <div className="hidden md:block rounded-2xl border border-stone-200/80 bg-stone-50 p-4">
                       <h3 className="text-sm font-semibold text-stone-700 flex items-center gap-2 mb-2">
                         <Heart size={16} className="text-pink-400" /> Tip
-                      </h3>
+                        </h3>
                       <p className="text-xs text-stone-500 leading-relaxed">
                         {activeTool === 'sticker'
                           ? 'Pick a sticker and tap the canvas to place it!'
                           : 'Draw anything you want — use magic colors!'}
-                      </p>
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="md:col-span-3 order-1 md:order-2 draw-canvas-panel relative">
                     <div className="h-full rounded-2xl border border-stone-200/80 bg-white p-2 sm:p-3 shadow-sm">
-                      <DrawingCanvas
-                        color={currentColor}
-                        brushSize={brushSize}
+                    <DrawingCanvas
+                      color={currentColor}
+                      brushSize={brushSize}
                         onSave={openSaveDialog}
                         onDrawingStarted={handleDrawingStarted}
                         onDrawingCleared={handleDrawingCleared}
-                        activityType={activeActivity}
-                        level={activeLevel}
-                        activeTool={activeTool}
-                        selectedSticker={selectedSticker}
+                      activityType={activeActivity}
+                      level={activeLevel}
+                      activeTool={activeTool}
+                      selectedSticker={selectedSticker}
                         isFullscreen={false}
                         onColorChange={setCurrentColor}
-                      />
+                    />
                     </div>
 
                     <AnimatePresence>
@@ -650,13 +705,13 @@ export default function App() {
                           exit={{ opacity: 0 }}
                           className="absolute inset-0 z-[200] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px] rounded-[2rem]"
                         >
-                          <motion.div
+                          <motion.div 
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             className="w-full max-w-md p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2.5rem] shadow-2xl text-white border-4 border-white relative"
                           >
-                            <button
+                            <button 
                               type="button"
                               onClick={() => setIsChallengeOpen(false)}
                               className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
@@ -675,9 +730,9 @@ export default function App() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => {
-                                  confetti({
-                                    particleCount: 100,
-                                    spread: 60,
+                                  confetti({ 
+                                    particleCount: 100, 
+                                    spread: 60, 
                                     origin: { y: 0.6 },
                                     colors: ['#FF69B4', '#8A2BE2', '#FFD700', '#00BFFF'],
                                   });
@@ -807,7 +862,7 @@ export default function App() {
                                 title={art.title}
                                 frameId={selectedFrame}
                               />
-                              <button
+                              <button 
                                 onClick={() => {
                                   const newArt = savedArt.filter((_, index) => index !== i);
                                   setSavedArt(newArt);

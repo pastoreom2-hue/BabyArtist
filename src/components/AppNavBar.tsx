@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image as ImageIcon, Palette, Save } from 'lucide-react';
+import { Image as ImageIcon, Images, Palette } from 'lucide-react';
 import { NavBarButton } from './NavBarButton';
 
 export type AppView = 'draw' | 'saved' | 'gallery';
@@ -23,11 +23,11 @@ export const AppNavBar: React.FC<AppNavBarProps> = ({ view, onViewChange }) => (
         onClick={() => onViewChange('draw')}
       />
       <NavBarButton
-        icon={Save}
-        label="Save Drawing"
+        icon={Images}
+        label="Gallery"
         variant="save"
-        isActive={view === 'saved'}
-        onClick={() => onViewChange('saved')}
+        isActive={view === 'gallery' || view === 'saved'}
+        onClick={() => onViewChange('gallery')}
         data-tour="tour-step-1"
       />
       <NavBarButton

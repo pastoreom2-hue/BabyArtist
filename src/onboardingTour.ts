@@ -12,7 +12,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: 'tour-step-1',
     view: 'draw',
-    message: '📸 Save Drawing을 눌러 저장된 그림을 보고, 사진도 올려 보세요!',
+    message: '📸 Gallery에서 저장된 그림을 보고, Send로 가족과 공유해 보세요!',
   },
   {
     target: 'tour-step-2',

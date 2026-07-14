@@ -34,8 +34,10 @@ export const GalleryShareGuide: React.FC<GalleryShareGuideProps> = ({
           <Share2 size={16} strokeWidth={2.25} />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-stone-800">Share with Family</h3>
-          <p className="text-[10px] text-stone-400">Send framed art via SNS or email</p>
+          <h3 className="text-sm font-semibold text-stone-800">Send to Family</h3>
+          <p className="text-[10px] text-stone-400">
+            모바일: 공유 → 카카오톡 · PC: 파일 저장 후 앨범 첨부 (붙여넣기 불가)
+          </p>
         </div>
       </div>
       <ArtworkShareActions
