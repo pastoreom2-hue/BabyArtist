@@ -75,11 +75,11 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: 'Save Drawing',
-            text: 'Tap **Save Drawing** in the top menu bar to take a photo or choose one from your gallery.',
+            text: 'Tap **Save Drawing** to browse your saved pictures (newest first). Use **Add Photo** there to snap or pick a photo.',
           },
           {
             label: 'Save from Canvas',
-            text: 'Finished drawing on the app? Tap the pink **Save** button on the canvas — confetti means it worked!',
+            text: 'Finished drawing on the app? Tap the pink **Save** button on the canvas — confetti means it worked, then you land in Saved Drawings!',
           },
           {
             label: 'Pretty Frames',
@@ -187,11 +187,11 @@ export const HELP_GUIDE: Record<HelpLang, HelpGuideCopy> = {
         bullets: [
           {
             label: '그림 올리기',
-            text: '상단 메뉴의 **Save Drawing** 버튼으로 사진을 찍거나 앨범에서 고르세요.',
+            text: '상단 메뉴의 **Save Drawing**을 누르면 저장된 그림을 최신순으로 볼 수 있어요. **Add Photo**로 사진도 추가할 수 있어요.',
           },
           {
             label: '캔버스 저장',
-            text: '앱에서 그린 그림은 캔버스의 분홍 **Save** 버튼을 누르면 갤러리에 저장돼요. 색종이가 터지면 성공!',
+            text: '앱에서 그린 그림은 캔버스의 분홍 **Save** 버튼을 누르면 갤러리에 저장되고 Saved Drawings로 이동해요. 색종이가 터지면 성공!',
           },
           {
             label: '예쁜 액자',

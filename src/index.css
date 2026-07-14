@@ -749,7 +749,7 @@
 .help-intro-video__media {
   display: block;
   width: 100%;
-  height: auto;
+  height: min(42vw, 220px);
   max-height: min(42vw, 220px);
   object-fit: contain;
   object-position: center;
@@ -818,6 +818,7 @@
 
 @media (min-width: 640px) {
   .help-intro-video__media {
+    height: 240px;
     max-height: 240px;
   }
 
@@ -842,6 +843,7 @@
 
 @media (min-width: 768px) {
   .help-intro-video__media {
+    height: 260px;
     max-height: 260px;
   }
 }

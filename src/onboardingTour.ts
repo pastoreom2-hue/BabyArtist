@@ -1,6 +1,6 @@
 export const TOUR_STORAGE_KEY = 'babyartist-onboarding-complete';
 
-export type TourView = 'draw' | 'gallery';
+export type TourView = 'draw' | 'saved' | 'gallery';
 
 export interface TourStep {
   target: string;
@@ -12,7 +12,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: 'tour-step-1',
     view: 'draw',
-    message: '📸 먼저 우리 아이가 그린 소중한 그림을 찍어서 올려주세요!',
+    message: '📸 Save Drawing을 눌러 저장된 그림을 보고, 사진도 올려 보세요!',
   },
   {
     target: 'tour-step-2',

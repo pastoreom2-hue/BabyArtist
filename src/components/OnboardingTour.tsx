@@ -6,8 +6,8 @@ import { TOUR_STEPS, markTourCompleted } from '../onboardingTour';
 interface OnboardingTourProps {
   isOpen: boolean;
   onClose: () => void;
-  currentView: 'draw' | 'gallery';
-  onChangeView: (view: 'draw' | 'gallery') => void;
+  currentView: 'draw' | 'saved' | 'gallery';
+  onChangeView: (view: 'draw' | 'saved' | 'gallery') => void;
 }
 
 interface SpotlightRect {

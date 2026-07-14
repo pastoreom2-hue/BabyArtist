@@ -17,7 +17,8 @@ import { HelpModal } from './components/HelpModal';
 import { SaveArtworkDialog } from './components/SaveArtworkDialog';
 import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
-import { AppNavBar } from './components/AppNavBar';
+import { AppNavBar, type AppView } from './components/AppNavBar';
+import { SavedDrawingsPanel } from './components/SavedDrawingsPanel';
 import { InstallAppPrompt } from './components/InstallAppPrompt';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
@@ -29,6 +30,7 @@ import {
   sanitizeArtworkFilename,
   type LocalArtwork,
 } from './utils/artworkNaming';
+import { forceDownloadDataUrl } from './utils/forceDownload';
 import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -91,7 +93,7 @@ export default function App() {
   const [autoArtworkName, setAutoArtworkName] = useState('');
   const [pendingSave, setPendingSave] = useState<{ dataUrl: string; defaultName: string } | null>(null);
   const [saveBannerError, setSaveBannerError] = useState<string | null>(null);
-  const [view, setView] = useState<'draw' | 'gallery'>('draw');
+  const [view, setView] = useState<AppView>('draw');
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isChallengeOpen, setIsChallengeOpen] = useState(false);
@@ -309,12 +311,17 @@ export default function App() {
       setSavedArt(newArt);
       persistLocalArtworks(newArt);
 
+      // Device file: force Save → Downloads (not Open / image viewer)
+      await forceDownloadDataUrl(dataUrl, title);
+
       confetti({
         particleCount: 150,
         spread: 70,
         origin: { y: 0.6 },
         colors: COLORS.map((c) => c.value),
       });
+
+      setView('saved');
 
       if (user) {
         try {
@@ -448,11 +455,7 @@ export default function App() {
           </div>
         </div>
 
-        <AppNavBar
-          view={view}
-          onViewChange={setView}
-          onPhotoUpload={handlePhotoUpload}
-        />
+        <AppNavBar view={view} onViewChange={setView} />
       </header>
 
       <main
@@ -714,6 +717,24 @@ export default function App() {
                   )}
                 </AnimatePresence>
               </div>
+            </motion.div>
+          ) : view === 'saved' ? (
+            <motion.div
+              key="saved"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <SavedDrawingsPanel
+                artworks={savedArt}
+                onAddPhoto={handlePhotoUpload}
+                onStartDrawing={() => setView('draw')}
+                onDelete={(index) => {
+                  const newArt = savedArt.filter((_, i) => i !== index);
+                  setSavedArt(newArt);
+                  persistLocalArtworks(newArt);
+                }}
+              />
             </motion.div>
           ) : (
             <motion.div
