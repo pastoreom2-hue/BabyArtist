@@ -14,6 +14,7 @@ import { OnboardingTour } from './components/OnboardingTour';
 import { FullscreenDock } from './components/FullscreenDock';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
 import { HelpModal } from './components/HelpModal';
+import { SaveArtworkDialog } from './components/SaveArtworkDialog';
 import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { AppNavBar } from './components/AppNavBar';
@@ -21,8 +22,17 @@ import { InstallAppPrompt } from './components/InstallAppPrompt';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
+import {
+  generateTempArtworkName,
+  loadLocalArtworks,
+  persistLocalArtworks,
+  sanitizeArtworkFilename,
+  type LocalArtwork,
+} from './utils/artworkNaming';
 import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+const FRIENDLY_SAVE_ERROR = "Oops! Let's try saving again";
 
 const isCoarsePointer = () =>
   window.matchMedia('(pointer: coarse)').matches ||
@@ -77,7 +87,10 @@ export default function App() {
   const [currentColor, setCurrentColor] = useState(COLORS[0].value);
   const [brushSize, setBrushSize] = useState(10);
   const [artworks, setArtworks] = useState<Artwork[]>([]);
-  const [savedArt, setSavedArt] = useState<string[]>([]);
+  const [savedArt, setSavedArt] = useState<LocalArtwork[]>([]);
+  const [autoArtworkName, setAutoArtworkName] = useState('');
+  const [pendingSave, setPendingSave] = useState<{ dataUrl: string; defaultName: string } | null>(null);
+  const [saveBannerError, setSaveBannerError] = useState<string | null>(null);
   const [view, setView] = useState<'draw' | 'gallery'>('draw');
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -103,13 +116,9 @@ export default function App() {
       setIsAuthReady(true);
     });
 
-    const localArt = localStorage.getItem('colorjoy-art');
-    if (localArt) {
-      try {
-        setSavedArt(JSON.parse(localArt));
-      } catch (e) {
-        console.error("Failed to load local art", e);
-      }
+    const localArt = loadLocalArtworks();
+    if (localArt.length) {
+      setSavedArt(localArt);
     }
 
     return () => {
@@ -267,44 +276,74 @@ export default function App() {
     return () => unsubscribe();
   }, [user]);
 
-  const handleSaveArtwork = async (dataUrl: string) => {
-    const title = `Masterpiece ${savedArt.length + 1}`;
-    const newArt = [dataUrl, ...savedArt].slice(0, 24);
-    setSavedArt(newArt);
-    localStorage.setItem('colorjoy-art', JSON.stringify(newArt));
+  const handleDrawingStarted = () => {
+    setAutoArtworkName((prev) => prev || generateTempArtworkName());
+  };
 
+  const handleDrawingCleared = () => {
+    setAutoArtworkName(generateTempArtworkName());
+  };
+
+  const openSaveDialog = (dataUrl: string) => {
+    setSaveBannerError(null);
+    const defaultName = sanitizeArtworkFilename(autoArtworkName || generateTempArtworkName());
+    setPendingSave({ dataUrl, defaultName });
+  };
+
+  const handleSaveArtwork = async (dataUrl: string, filename?: string) => {
+    const title = sanitizeArtworkFilename(filename || autoArtworkName || generateTempArtworkName());
     const dateTag = new Intl.DateTimeFormat('en-CA', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
     }).format(new Date());
 
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: COLORS.map(c => c.value)
-    });
+    const entry: LocalArtwork = {
+      dataUrl,
+      title,
+      savedAt: new Date().toISOString(),
+    };
 
-    if (user) {
-      try {
-        await addDoc(collection(db, 'artworks'), {
-          title,
-          dataUrl,
-          userId: user.uid,
-          userName: user.displayName,
-          createdAt: serverTimestamp(),
-          dateTag,
-          isShared: false
-        });
-      } catch (error) {
-        console.error("Cloud save failed, but local save succeeded:", error);
+    try {
+      const newArt = [entry, ...savedArt].slice(0, 24);
+      setSavedArt(newArt);
+      persistLocalArtworks(newArt);
+
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: COLORS.map((c) => c.value),
+      });
+
+      if (user) {
+        try {
+          await addDoc(collection(db, 'artworks'), {
+            title,
+            dataUrl,
+            userId: user.uid,
+            userName: user.displayName,
+            createdAt: serverTimestamp(),
+            dateTag,
+            isShared: false,
+          });
+        } catch (error) {
+          console.error('Cloud save failed, but local save succeeded:', error);
+        }
       }
+
+      setPendingSave(null);
+      setAutoArtworkName(generateTempArtworkName());
+      setSaveBannerError(null);
+    } catch (error) {
+      console.error(error);
+      setSaveBannerError(FRIENDLY_SAVE_ERROR);
+      throw error;
     }
   };
 
   const handlePhotoUpload = (dataUrl: string) => {
-    void handleSaveArtwork(dataUrl);
+    openSaveDialog(dataUrl);
   };
 
   const handleDeleteArtwork = async (id: string) => {
@@ -473,7 +512,9 @@ export default function App() {
                       <DrawingCanvas
                         color={currentColor}
                         brushSize={brushSize}
-                        onSave={handleSaveArtwork}
+                        onSave={openSaveDialog}
+                        onDrawingStarted={handleDrawingStarted}
+                        onDrawingCleared={handleDrawingCleared}
                         activityType={activeActivity}
                         level={activeLevel}
                         activeTool={activeTool}
@@ -586,7 +627,9 @@ export default function App() {
                       <DrawingCanvas
                         color={currentColor}
                         brushSize={brushSize}
-                        onSave={handleSaveArtwork}
+                        onSave={openSaveDialog}
+                        onDrawingStarted={handleDrawingStarted}
+                        onDrawingCleared={handleDrawingCleared}
                         activityType={activeActivity}
                         level={activeLevel}
                         activeTool={activeTool}
@@ -694,7 +737,7 @@ export default function App() {
 
               <GalleryShareGuide
                 selectedFrame={selectedFrame}
-                previewUrl={savedArt[0] ?? artworks[0]?.dataUrl}
+                previewUrl={savedArt[0]?.dataUrl ?? artworks[0]?.dataUrl}
               />
               
               {savedArt.length === 0 && artworks.length === 0 ? (
@@ -724,28 +767,30 @@ export default function App() {
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {savedArt.map((art, i) => (
                           <motion.div
-                            key={`local-${i}`}
+                            key={`local-${art.savedAt}-${i}`}
                             whileHover={{ scale: 1.05, rotate: i % 2 === 0 ? 2 : -2 }}
                             className="bg-white p-3 rounded-2xl border-4 border-slate-800 shadow-[6px_6px_0px_0px_rgba(30,41,59,1)] group relative overflow-hidden"
                           >
                             <FramedArtwork
-                              src={art}
-                              alt={`Art ${i}`}
+                              src={art.dataUrl}
+                              alt={art.title}
                               frameId={selectedFrame}
                               className="w-full aspect-square rounded-lg"
                             />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2 rounded-lg">
-                              <p className="text-white text-[10px] font-medium text-center">Frame · Share</p>
+                              <p className="text-white text-[10px] font-medium text-center truncate max-w-full px-1">
+                                {art.title}
+                              </p>
                               <ArtworkShareActions
-                                dataUrl={art}
-                                title={`Masterpiece ${i + 1}`}
+                                dataUrl={art.dataUrl}
+                                title={art.title}
                                 frameId={selectedFrame}
                               />
                               <button
                                 onClick={() => {
                                   const newArt = savedArt.filter((_, index) => index !== i);
                                   setSavedArt(newArt);
-                                  localStorage.setItem('colorjoy-art', JSON.stringify(newArt));
+                                  persistLocalArtworks(newArt);
                                 }}
                                 className="p-2 bg-red-500 text-white rounded-full border-2 border-slate-800 shadow-md text-xs font-bold"
                                 title="Delete"
@@ -808,6 +853,34 @@ export default function App() {
       />
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+
+      <SaveArtworkDialog
+        isOpen={!!pendingSave}
+        previewUrl={pendingSave?.dataUrl ?? ''}
+        defaultName={pendingSave?.defaultName ?? generateTempArtworkName()}
+        onCancel={() => setPendingSave(null)}
+        onConfirm={async (filename) => {
+          if (!pendingSave) return;
+          await handleSaveArtwork(pendingSave.dataUrl, filename);
+        }}
+      />
+
+      {saveBannerError && (
+        <div
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[10003] max-w-sm w-[calc(100%-2rem)] px-4 py-3 rounded-2xl bg-pink-600 text-white text-sm font-semibold shadow-xl text-center"
+          role="alert"
+          data-testid="save-error-banner"
+        >
+          {saveBannerError}
+          <button
+            type="button"
+            className="ml-2 underline font-bold"
+            onClick={() => setSaveBannerError(null)}
+          >
+            OK
+          </button>
+        </div>
+      )}
 
       {!isFullscreen && <InstallAppPrompt />}
 

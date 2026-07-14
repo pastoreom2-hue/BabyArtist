@@ -40,7 +40,7 @@ export const GalleryShareGuide: React.FC<GalleryShareGuideProps> = ({
       </div>
       <ArtworkShareActions
         dataUrl={shareUrl}
-        title="BabyArtist Masterpiece"
+        title="BabyArtist Masterpiece.png"
         frameId={selectedFrame}
       />
     </section>

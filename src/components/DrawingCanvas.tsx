@@ -14,6 +14,8 @@ interface DrawingCanvasProps {
   selectedSticker: Sticker | null;
   isFullscreen?: boolean;
   onColorChange?: (color: string) => void;
+  onDrawingStarted?: () => void;
+  onDrawingCleared?: () => void;
 }
 
 const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, 2);
@@ -36,6 +38,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   selectedSticker,
   isFullscreen,
   onColorChange,
+  onDrawingStarted,
+  onDrawingCleared,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const templateRef = useRef<HTMLCanvasElement>(null);
@@ -44,6 +48,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const pixelRatioRef = useRef(getPixelRatio());
   const [isDrawing, setIsDrawing] = useState(false);
   const isDrawingRef = useRef(false);
+  const hasStartedDrawingRef = useRef(false);
+  const onDrawingStartedRef = useRef(onDrawingStarted);
+  onDrawingStartedRef.current = onDrawingStarted;
 
   const configRef = useRef({ color, brushSize, activeTool, selectedSticker });
 
@@ -139,18 +146,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     applyCanvasDimensions(parent.clientWidth, parent.clientHeight, false);
   }, [applyCanvasDimensions]);
 
-  const placeSticker = useCallback((e: PointerEvent) => {
-    const { activeTool, selectedSticker: sticker } = configRef.current;
-    if (activeTool !== 'sticker' || !sticker || !contextRef.current || !canvasRef.current) return;
-
-    const { offsetX, offsetY } = getPointerCoordinates(canvasRef.current, e);
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = sticker.url;
-    img.onload = () => {
-      const size = 60;
-      contextRef.current?.drawImage(img, offsetX - size / 2, offsetY - size / 2, size, size);
-    };
+  const notifyDrawingStarted = useCallback(() => {
+    if (hasStartedDrawingRef.current) return;
+    hasStartedDrawingRef.current = true;
+    onDrawingStartedRef.current?.();
   }, []);
 
   const startDrawing = useCallback((e: PointerEvent) => {
@@ -170,7 +169,23 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     isDrawingRef.current = true;
     setIsDrawing(true);
-  }, []);
+    notifyDrawingStarted();
+  }, [notifyDrawingStarted]);
+
+  const placeSticker = useCallback((e: PointerEvent) => {
+    const { activeTool, selectedSticker: sticker } = configRef.current;
+    if (activeTool !== 'sticker' || !sticker || !contextRef.current || !canvasRef.current) return;
+
+    const { offsetX, offsetY } = getPointerCoordinates(canvasRef.current, e);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = sticker.url;
+    img.onload = () => {
+      const size = 60;
+      contextRef.current?.drawImage(img, offsetX - size / 2, offsetY - size / 2, size, size);
+      notifyDrawingStarted();
+    };
+  }, [notifyDrawingStarted]);
 
   const draw = useCallback((e: PointerEvent) => {
     if (!isDrawingRef.current || !canvasRef.current) return;
@@ -272,6 +287,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [applyCanvasDimensions, handlePointerDown, handlePointerMove, handlePointerEnd, isFullscreen]);
 
   const handleClear = () => {
+    hasStartedDrawingRef.current = false;
+    onDrawingCleared?.();
     resetDrawingCanvas();
   };
 

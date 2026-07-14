@@ -8,6 +8,7 @@ import {
   shareFramedImage,
   shareFramedImageByEmail,
 } from '../utils/framedExport';
+import { sanitizeArtworkFilename } from '../utils/artworkNaming';
 
 interface ArtworkShareActionsProps {
   dataUrl: string;
@@ -15,6 +16,8 @@ interface ArtworkShareActionsProps {
   frameId: FrameId;
   className?: string;
 }
+
+const FRIENDLY_SAVE_ERROR = "Oops! Let's try saving again";
 
 export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
   dataUrl,
@@ -30,11 +33,13 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
       await fn();
     } catch (e) {
       console.error(e);
-      alert('Share failed. Please try again.');
+      alert(FRIENDLY_SAVE_ERROR);
     } finally {
       setLoading(null);
     }
   };
+
+  const safeTitle = sanitizeArtworkFilename(title);
 
   const btnClass =
     'w-10 h-10 rounded-full border border-stone-200 bg-white shadow-sm transition-all flex items-center justify-center disabled:opacity-50 hover:border-stone-300';
@@ -48,7 +53,7 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
         title="Share (framed)"
         onClick={() =>
           run('sns', async () => {
-            const result = await shareFramedImage(dataUrl, frameId, title);
+            const result = await shareFramedImage(dataUrl, frameId, safeTitle);
             if (result === 'downloaded') {
               alert('Framed image saved! Open your messaging app and attach the photo to share.');
             }
@@ -64,7 +69,7 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
         whileTap={{ scale: 0.95 }}
         disabled={!!loading}
         title="Email (framed)"
-        onClick={() => run('email', () => shareFramedImageByEmail(dataUrl, frameId, title))}
+        onClick={() => run('email', () => shareFramedImageByEmail(dataUrl, frameId, safeTitle))}
         className={`${btnClass} text-blue-600 hover:bg-blue-50`}
       >
         {loading === 'email' ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
@@ -78,7 +83,7 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
         onClick={() =>
           run('save', async () => {
             const blob = await createFramedImageBlob(dataUrl, frameId);
-            downloadFramedImage(blob, (title || 'babyartist').replace(/\s+/g, '-'));
+            downloadFramedImage(blob, safeTitle);
           })
         }
         className={`${btnClass} text-stone-600 hover:bg-stone-50`}

@@ -4,6 +4,10 @@ import {
   getArtHole,
   getFrameSvgMarkup,
 } from './frameSvg';
+import {
+  displayTitleFromFilename,
+  sanitizeArtworkFilename,
+} from './artworkNaming';
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -66,10 +70,11 @@ export async function createFramedImageBlob(
 }
 
 export function downloadFramedImage(blob: Blob, filename: string) {
+  const safe = sanitizeArtworkFilename(filename);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename.endsWith('.png') ? filename : `${filename}.png`;
+  a.download = safe;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -82,14 +87,17 @@ export async function shareFramedImage(
   title: string
 ): Promise<'shared' | 'downloaded' | 'cancelled'> {
   const blob = await createFramedImageBlob(dataUrl, frameId);
-  const safeName = (title || 'babyartist').replace(/\s+/g, '-');
-  const file = new File([blob], `${safeName}-framed.png`, { type: 'image/png' });
+  const safeName = sanitizeArtworkFilename(title);
+  const displayTitle = displayTitleFromFilename(safeName);
+  const file = new File([blob], safeName.replace(/\.png$/i, '') + '-framed.png', {
+    type: 'image/png',
+  });
   const shareText = '우리 아이의 멋진 작품이에요! BabyArtist에서 만들었어요.';
 
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({
-        title: title || 'BabyArtist',
+        title: displayTitle,
         text: shareText,
         files: [file],
       });
@@ -109,9 +117,12 @@ export async function shareFramedImageByEmail(
   title: string
 ): Promise<void> {
   const blob = await createFramedImageBlob(dataUrl, frameId);
-  const safeName = (title || 'babyartist').replace(/\s+/g, '-');
-  const file = new File([blob], `${safeName}-framed.png`, { type: 'image/png' });
-  const subject = encodeURIComponent(`BabyArtist: ${title || 'My Masterpiece'}`);
+  const safeName = sanitizeArtworkFilename(title);
+  const displayTitle = displayTitleFromFilename(safeName);
+  const file = new File([blob], safeName.replace(/\.png$/i, '') + '-framed.png', {
+    type: 'image/png',
+  });
+  const subject = encodeURIComponent(`BabyArtist: ${displayTitle}`);
   const body = encodeURIComponent(
     '우리 아이의 그림을 보내드려요!\n\n(첨부 이미지는 저장된 파일을 이메일에 추가해 주세요.)'
   );
@@ -119,7 +130,7 @@ export async function shareFramedImageByEmail(
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({
-        title: subject,
+        title: displayTitle,
         text: '우리 아이의 멋진 작품이에요!',
         files: [file],
       });
