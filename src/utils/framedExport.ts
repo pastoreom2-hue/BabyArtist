@@ -9,10 +9,15 @@ import {
   sanitizeArtworkFilename,
 } from './artworkNaming';
 
+export type ShareResult = 'shared' | 'downloaded' | 'cancelled';
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Only set CORS for http(s); data: URLs can fail to paint with crossOrigin.
+    if (/^https?:\/\//i.test(src)) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('Failed to load artwork image'));
     img.src = src;
@@ -35,6 +40,7 @@ function drawImageContained(
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
+/** Canvas → PNG Blob with an explicit MIME type (required for Web Share attachments). */
 export async function createFramedImageBlob(
   dataUrl: string,
   frameId: FrameId
@@ -60,13 +66,87 @@ export async function createFramedImageBlob(
   const frameImg = await loadImage(frameUrl);
   ctx.drawImage(frameImg, 0, 0, w, h);
 
-  return new Promise((resolve, reject) => {
+  const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Failed to export image'))),
+      (result) => (result ? resolve(result) : reject(new Error('Failed to export image'))),
       'image/png',
       0.92
     );
   });
+
+  // Some browsers return Blob with empty type — normalize for canShare/File.
+  if (blob.type === 'image/png') return blob;
+  return new Blob([blob], { type: 'image/png' });
+}
+
+/** Build a real PNG File suitable for navigator.share({ files }). */
+export async function createFramedImageFile(
+  dataUrl: string,
+  frameId: FrameId,
+  title: string
+): Promise<{ blob: Blob; file: File; filename: string; displayTitle: string }> {
+  const blob = await createFramedImageBlob(dataUrl, frameId);
+  const filename = sanitizeArtworkFilename(title).replace(/\.png$/i, '') + '-framed.png';
+  const displayTitle = displayTitleFromFilename(sanitizeArtworkFilename(title));
+
+  // ArrayBuffer construction is the most reliable for iOS Web Share attachments.
+  const buffer = await blob.arrayBuffer();
+  const file = new File([buffer], filename, {
+    type: 'image/png',
+    lastModified: Date.now(),
+  });
+
+  return { blob, file, filename, displayTitle };
+}
+
+export function canShareFiles(file: File): boolean {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    return false;
+  }
+  try {
+    if (typeof navigator.canShare !== 'function') {
+      // Older share-capable browsers: attempt share; caller catches failures.
+      return true;
+    }
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Prefer files-only share (iOS often rejects files+text).
+ * Fall back to title/text+files, then to download.
+ */
+export async function sharePngFile(
+  file: File,
+  blob: Blob,
+  opts: { displayTitle: string; text?: string; downloadName: string }
+): Promise<ShareResult> {
+  if (canShareFiles(file)) {
+    try {
+      // 1) Files only — most reliable attachment path on mobile
+      await navigator.share({ files: [file] });
+      return 'shared';
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return 'cancelled';
+      try {
+        // 2) Retry with metadata when files-only is unsupported oddly
+        await navigator.share({
+          files: [file],
+          title: opts.displayTitle,
+          text: opts.text,
+        });
+        return 'shared';
+      } catch (err2) {
+        if ((err2 as Error).name === 'AbortError') return 'cancelled';
+        // Fall through to download
+      }
+    }
+  }
+
+  downloadFramedImage(blob, opts.downloadName);
+  return 'downloaded';
 }
 
 export function downloadFramedImage(blob: Blob, filename: string) {
@@ -74,7 +154,7 @@ export function downloadFramedImage(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = safe;
+  a.download = safe.endsWith('.png') ? safe : `${safe}.png`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -85,61 +165,37 @@ export async function shareFramedImage(
   dataUrl: string,
   frameId: FrameId,
   title: string
-): Promise<'shared' | 'downloaded' | 'cancelled'> {
-  const blob = await createFramedImageBlob(dataUrl, frameId);
-  const safeName = sanitizeArtworkFilename(title);
-  const displayTitle = displayTitleFromFilename(safeName);
-  const file = new File([blob], safeName.replace(/\.png$/i, '') + '-framed.png', {
-    type: 'image/png',
+): Promise<ShareResult> {
+  const { blob, file, displayTitle } = await createFramedImageFile(dataUrl, frameId, title);
+  return sharePngFile(file, blob, {
+    displayTitle,
+    text: '우리 아이의 멋진 작품이에요! BabyArtist에서 만들었어요.',
+    downloadName: sanitizeArtworkFilename(title),
   });
-  const shareText = '우리 아이의 멋진 작품이에요! BabyArtist에서 만들었어요.';
-
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({
-        title: displayTitle,
-        text: shareText,
-        files: [file],
-      });
-      return 'shared';
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') return 'cancelled';
-    }
-  }
-
-  downloadFramedImage(blob, safeName);
-  return 'downloaded';
 }
 
 export async function shareFramedImageByEmail(
   dataUrl: string,
   frameId: FrameId,
   title: string
-): Promise<void> {
-  const blob = await createFramedImageBlob(dataUrl, frameId);
-  const safeName = sanitizeArtworkFilename(title);
-  const displayTitle = displayTitleFromFilename(safeName);
-  const file = new File([blob], safeName.replace(/\.png$/i, '') + '-framed.png', {
-    type: 'image/png',
-  });
-  const subject = encodeURIComponent(`BabyArtist: ${displayTitle}`);
-  const body = encodeURIComponent(
-    '우리 아이의 그림을 보내드려요!\n\n(첨부 이미지는 저장된 파일을 이메일에 추가해 주세요.)'
-  );
+): Promise<ShareResult> {
+  const { blob, file, displayTitle } = await createFramedImageFile(dataUrl, frameId, title);
 
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({
-        title: displayTitle,
-        text: '우리 아이의 멋진 작품이에요!',
-        files: [file],
-      });
-      return;
-    } catch {
-      // fall through
-    }
+  // Email apps that support Web Share files will receive a real attachment.
+  const result = await sharePngFile(file, blob, {
+    displayTitle,
+    text: `BabyArtist: ${displayTitle}`,
+    downloadName: sanitizeArtworkFilename(title),
+  });
+
+  if (result === 'downloaded') {
+    // mailto cannot attach binary files — open compose after download as last resort
+    const subject = encodeURIComponent(`BabyArtist: ${displayTitle}`);
+    const body = encodeURIComponent(
+      '우리 아이의 그림을 보내드려요!\n\n방금 저장된 액자 이미지를 이메일에 첨부해 주세요.'
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
-  downloadFramedImage(blob, safeName);
-  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  return result;
 }

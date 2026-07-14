@@ -42,20 +42,27 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
   const safeTitle = sanitizeArtworkFilename(title);
 
   const btnClass =
-    'w-10 h-10 rounded-full border border-stone-200 bg-white shadow-sm transition-all flex items-center justify-center disabled:opacity-50 hover:border-stone-300';
+    'w-10 h-10 rounded-full border border-stone-200 bg-white shadow-sm transition-all flex items-center justify-center disabled:opacity-50 hover:border-stone-300 min-w-[44px] min-h-[44px]';
 
   return (
-    <div className={`flex items-center justify-center gap-2 ${className}`}>
+    <div
+      className={`flex items-center justify-center gap-2 ${className}`}
+      data-testid="artwork-share-actions"
+    >
       <motion.button
         type="button"
         whileTap={{ scale: 0.95 }}
         disabled={!!loading}
         title="Share (framed)"
+        aria-label="Share framed drawing"
+        data-testid="share-sns-btn"
         onClick={() =>
           run('sns', async () => {
             const result = await shareFramedImage(dataUrl, frameId, safeTitle);
             if (result === 'downloaded') {
-              alert('Framed image saved! Open your messaging app and attach the photo to share.');
+              alert(
+                'Framed image saved to your device! Open Messages / KakaoTalk and attach that photo to send.'
+              );
             }
           })
         }
@@ -69,7 +76,18 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
         whileTap={{ scale: 0.95 }}
         disabled={!!loading}
         title="Email (framed)"
-        onClick={() => run('email', () => shareFramedImageByEmail(dataUrl, frameId, safeTitle))}
+        aria-label="Email framed drawing"
+        data-testid="share-email-btn"
+        onClick={() =>
+          run('email', async () => {
+            const result = await shareFramedImageByEmail(dataUrl, frameId, safeTitle);
+            if (result === 'downloaded') {
+              alert(
+                'Framed image downloaded. Please attach that PNG file in your email composer.'
+              );
+            }
+          })
+        }
         className={`${btnClass} text-blue-600 hover:bg-blue-50`}
       >
         {loading === 'email' ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
@@ -80,6 +98,8 @@ export const ArtworkShareActions: React.FC<ArtworkShareActionsProps> = ({
         whileTap={{ scale: 0.95 }}
         disabled={!!loading}
         title="Download (framed)"
+        aria-label="Download framed drawing"
+        data-testid="share-download-btn"
         onClick={() =>
           run('save', async () => {
             const blob = await createFramedImageBlob(dataUrl, frameId);
