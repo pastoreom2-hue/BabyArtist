@@ -9,6 +9,11 @@ interface AppNavBarProps {
   onViewChange: (view: AppView) => void;
 }
 
+/**
+ * Nav order: Draw | Send Drawing | Gallery
+ * - Send Drawing → frame + share flow (howto card)
+ * - Gallery → saved masterpieces list
+ */
 export const AppNavBar: React.FC<AppNavBarProps> = ({ view, onViewChange }) => (
   <nav
     aria-label="Main menu"
@@ -23,19 +28,19 @@ export const AppNavBar: React.FC<AppNavBarProps> = ({ view, onViewChange }) => (
         onClick={() => onViewChange('draw')}
       />
       <NavBarButton
-        icon={Images}
-        label="Gallery"
-        variant="save"
-        isActive={view === 'gallery' || view === 'saved'}
-        onClick={() => onViewChange('gallery')}
-        data-tour="tour-step-1"
-      />
-      <NavBarButton
         icon={ImageIcon}
         label="Send Drawing"
         variant="send"
         isActive={view === 'gallery'}
         onClick={() => onViewChange('gallery')}
+        data-tour="tour-step-1"
+      />
+      <NavBarButton
+        icon={Images}
+        label="Gallery"
+        variant="save"
+        isActive={view === 'saved'}
+        onClick={() => onViewChange('saved')}
       />
     </div>
   </nav>

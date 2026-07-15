@@ -104,6 +104,7 @@ export default function App() {
     if (typeof window === 'undefined') return 'draw';
     const path = window.location.pathname.replace(/\/+$/, '');
     if (path === '/gallery' || window.location.hash === '#gallery') return 'gallery';
+    if (path === '/saved' || window.location.hash === '#saved') return 'saved';
     return 'draw';
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -148,16 +149,14 @@ export default function App() {
     localStorage.setItem(FRAME_STORAGE_KEY, selectedFrame);
   }, [selectedFrame]);
 
-  // Keep /gallery in the URL when browsing the gallery
+  // Keep URL in sync with the active view
   useEffect(() => {
     const next =
-      view === 'gallery' || view === 'saved'
-        ? '/gallery'
-        : '/';
+      view === 'gallery' ? '/gallery' : view === 'saved' ? '/saved' : '/';
     if (window.location.pathname !== next) {
       window.history.replaceState(null, '', next);
     }
-    if (view === 'gallery' || view === 'saved') {
+    if (view === 'gallery') {
       window.scrollTo(0, 0);
       document.getElementById('root')?.scrollTo?.(0, 0);
       requestAnimationFrame(() => {
@@ -173,6 +172,7 @@ export default function App() {
     const onPop = () => {
       const path = window.location.pathname.replace(/\/+$/, '') || '/';
       if (path === '/gallery') setView('gallery');
+      else if (path === '/saved') setView('saved');
       else setView('draw');
     };
     window.addEventListener('popstate', onPop);
@@ -505,7 +505,7 @@ export default function App() {
         </div>
 
         <AppNavBar view={view} onViewChange={setView} />
-        {!isFullscreen && (view === 'gallery' || view === 'saved') && (
+        {!isFullscreen && view === 'gallery' && (
           <div className="px-3 sm:px-4 pb-3 pt-1 max-w-3xl mx-auto w-full">
             <ShareHowToCard />
           </div>
