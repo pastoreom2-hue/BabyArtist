@@ -113,7 +113,9 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
       const nextH = Math.round(height * ratio);
 
       // Skip no-op resizes — iPad Safari fires tiny viewport jitters that wipe strokes.
+      // Never skip when preserveDrawing is false (trash / activity reset must clear).
       if (
+        preserveDrawing &&
         canvas.width === nextW &&
         canvas.height === nextH &&
         canvas.style.width === `${width}px` &&
@@ -363,11 +365,25 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
     };
   }, [applyCanvasDimensions, handlePointerDown, handlePointerMove, handlePointerEnd, isFullscreen]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     hasStartedDrawingRef.current = false;
+    isDrawingRef.current = false;
+    setIsDrawing(false);
+    pendingResizeRef.current = false;
     onDrawingCleared?.();
+
+    const canvas = canvasRef.current;
+    const ctx = contextRef.current;
+    if (canvas && ctx) {
+      // Explicit wipe in device pixels so trash works even if size is unchanged.
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
     resetDrawingCanvas();
-  };
+  }, [onDrawingCleared, resetDrawingCanvas]);
 
   const isActivityMode = activityType !== 'free-draw';
   const activityHint = getActivityHint(activityType, level);
@@ -379,10 +395,14 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
     }
   };
 
-  useImperativeHandle(ref, () => ({
-    clear: handleClear,
-    exportDataUrl: () => canvasRef.current?.toDataURL() ?? null,
-  }));
+  useImperativeHandle(
+    ref,
+    () => ({
+      clear: handleClear,
+      exportDataUrl: () => canvasRef.current?.toDataURL() ?? null,
+    }),
+    [handleClear],
+  );
 
   return (
     <div

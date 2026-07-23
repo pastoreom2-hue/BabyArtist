@@ -660,9 +660,14 @@ export default function App() {
                           className="canvas-hud-action canvas-hud-action--trash"
                           title="Clear Canvas"
                           aria-label="Clear Canvas"
-                          onClick={() => fullscreenCanvasRef.current?.clear()}
+                          data-testid="fs-trash-btn"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            fullscreenCanvasRef.current?.clear();
+                          }}
                         >
-                          <Trash2 className="canvas-hud-action__icon" />
+                          <Trash2 className="canvas-hud-action__icon" aria-hidden />
                         </button>
                         <button
                           type="button"
