@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Share2 } from 'lucide-react';
 import { FrameId } from '../frames';
 import { ArtworkShareActions } from './ArtworkShareActions';
+import {
+  type FamilyContact,
+  familyRecipientLabel,
+  loadFamilyContact,
+} from '../utils/familyContact';
 
 const DEMO_ART =
   'data:image/svg+xml;utf8,' +
@@ -16,13 +21,18 @@ const DEMO_ART =
 interface GalleryShareGuideProps {
   selectedFrame: FrameId;
   previewUrl?: string;
+  familyContact?: FamilyContact;
 }
 
 export const GalleryShareGuide: React.FC<GalleryShareGuideProps> = ({
   selectedFrame,
   previewUrl,
+  familyContact,
 }) => {
   const shareUrl = previewUrl || DEMO_ART;
+  const [successLabel, setSuccessLabel] = useState<string | null>(null);
+  const contact = familyContact ?? loadFamilyContact();
+  const label = familyRecipientLabel(contact);
 
   return (
     <section
@@ -36,7 +46,9 @@ export const GalleryShareGuide: React.FC<GalleryShareGuideProps> = ({
         <div>
           <h3 className="text-sm font-semibold text-stone-800">Send to Family</h3>
           <p className="text-[10px] text-stone-400">
-            모바일: 공유 → 카카오톡 · PC: 파일 저장 후 앨범 첨부 (붙여넣기 불가)
+            {contact.email || contact.phone
+              ? `One-touch send to ${label}`
+              : '모바일: 공유 → 카카오톡 · PC: 파일 저장 후 앨범 첨부 (붙여넣기 불가)'}
           </p>
         </div>
       </div>
@@ -44,7 +56,22 @@ export const GalleryShareGuide: React.FC<GalleryShareGuideProps> = ({
         dataUrl={shareUrl}
         title="BabyArtist Masterpiece.png"
         frameId={selectedFrame}
+        contact={contact}
+        variant="hero"
+        onSuccess={(name) => {
+          setSuccessLabel(name);
+          window.setTimeout(() => setSuccessLabel(null), 3200);
+        }}
       />
+      {successLabel && (
+        <p
+          className="mt-3 text-center text-sm font-bold text-pink-600 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2"
+          role="status"
+          data-testid="gallery-send-success"
+        >
+          Sent to {successLabel} successfully!
+        </p>
+      )}
     </section>
   );
 };

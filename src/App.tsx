@@ -16,6 +16,8 @@ import { GalleryShareGuide } from './components/GalleryShareGuide';
 import { ShareHowToCard } from './components/ShareHowToCard';
 import { HelpModal } from './components/HelpModal';
 import { SaveArtworkDialog } from './components/SaveArtworkDialog';
+import { FamilyContactSettings } from './components/FamilyContactSettings';
+import { OneTouchSendModal } from './components/OneTouchSendModal';
 import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { AppNavBar, type AppView } from './components/AppNavBar';
@@ -29,6 +31,10 @@ import {
 } from './utils/artworkIdb';
 import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
+import {
+  type FamilyContact,
+  loadFamilyContact,
+} from './utils/familyContact';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
 import {
   generateTempArtworkName,
@@ -38,7 +44,7 @@ import {
   type LocalArtwork,
 } from './utils/artworkNaming';
 import { downloadDataUrl } from './utils/downloadDataUrl';
-import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle, Trash2, Save } from 'lucide-react';
+import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle, Trash2, Save, Settings2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const FRIENDLY_SAVE_ERROR = "Oops! Let's try saving again";
@@ -131,6 +137,9 @@ export default function App() {
   const [selectedFrame, setSelectedFrame] = useState<FrameId>(loadStoredFrame);
   const [showTour, setShowTour] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false);
+  const [familyContact, setFamilyContact] = useState<FamilyContact>(() => loadFamilyContact());
+  const [postSaveSend, setPostSaveSend] = useState<{ dataUrl: string; title: string } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adBannerOffset = useAdBannerOffset(isFullscreen);
   const drawingAreaRef = useRef<HTMLDivElement>(null);
@@ -433,6 +442,7 @@ export default function App() {
       }
 
       setPendingSave(null);
+      setPostSaveSend({ dataUrl, title });
       setAutoArtworkName(generateTempArtworkName());
       setSaveBannerError(null);
     } catch (error) {
@@ -518,6 +528,14 @@ export default function App() {
               title="Help"
               active={isHelpOpen}
               tone="help"
+              size="large"
+            />
+            <HeaderIconButton
+              icon={Settings2}
+              onClick={() => setIsFamilySettingsOpen(true)}
+              title="Family Send Settings (grown-ups)"
+              active={isFamilySettingsOpen}
+              tone="neutral"
               size="large"
             />
             {user ? (
@@ -913,6 +931,7 @@ export default function App() {
               <GalleryShareGuide
                 selectedFrame={selectedFrame}
                 previewUrl={savedArt[0]?.dataUrl ?? artworks[0]?.dataUrl}
+                familyContact={familyContact}
               />
               
               {savedArt.length === 0 && artworks.length === 0 ? (
@@ -1029,6 +1048,12 @@ export default function App() {
 
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
 
+      <FamilyContactSettings
+        isOpen={isFamilySettingsOpen}
+        onClose={() => setIsFamilySettingsOpen(false)}
+        onSaved={setFamilyContact}
+      />
+
       <SaveArtworkDialog
         isOpen={!!pendingSave}
         previewUrl={pendingSave?.dataUrl ?? ''}
@@ -1037,6 +1062,19 @@ export default function App() {
         onConfirm={async (filename) => {
           if (!pendingSave) return;
           await handleSaveArtwork(pendingSave.dataUrl, filename);
+        }}
+      />
+
+      <OneTouchSendModal
+        isOpen={!!postSaveSend}
+        previewUrl={postSaveSend?.dataUrl ?? ''}
+        title={postSaveSend?.title ?? 'My Drawing.png'}
+        frameId={selectedFrame}
+        contact={familyContact}
+        onClose={() => setPostSaveSend(null)}
+        onOpenSettings={() => {
+          setPostSaveSend(null);
+          setIsFamilySettingsOpen(true);
         }}
       />
 
