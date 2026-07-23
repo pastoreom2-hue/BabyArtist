@@ -74,7 +74,19 @@ const canScrollWithin = (target: EventTarget | null): boolean => {
     el = el.parentElement;
   }
 
+  // Document/viewport scroll (html or body) — common on mobile Safari/Chrome
+  const scrollingEl = document.scrollingElement ?? document.documentElement;
+  if (scrollingEl.scrollHeight > scrollingEl.clientHeight + 1) {
+    return true;
+  }
+
   return false;
+};
+
+/** Touch targets where page pan must stay blocked so drawing stays stable */
+const isDrawSurfaceTouch = (target: EventTarget | null): boolean => {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest('.canvas-container, .fullscreen-art-mode'));
 };
 
 const NURSERY_RHYMES = [
@@ -287,6 +299,9 @@ export default function App() {
 
     const preventDrag = (e: TouchEvent) => {
       if (!isCoarsePointer()) return;
+      // Only suppress page pan on the drawing surface / fullscreen art mode.
+      // Elsewhere, allow natural vertical scrolling on mobile.
+      if (!isDrawSurfaceTouch(e.target)) return;
       if (canScrollWithin(e.target)) return;
       if (e.cancelable) e.preventDefault();
     };
