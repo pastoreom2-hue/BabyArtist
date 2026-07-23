@@ -1,13 +1,15 @@
 import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { motion } from 'motion/react';
 import { ActivityType, ActivityLevel, Sticker } from '../types';
-import { Trash2, Save } from 'lucide-react';
+import { Trash2, Save, Send } from 'lucide-react';
 import { drawActivityTemplate, getActivityHint, getColorLegend } from '../activityTemplates';
 
 interface DrawingCanvasProps {
   color: string;
   brushSize: number;
   onSave: (dataUrl: string) => void;
+  /** One-touch send — called with current canvas image (no typing). */
+  onSend?: (dataUrl: string) => void;
   activityType: ActivityType;
   level: ActivityLevel;
   activeTool: 'pen' | 'sticker';
@@ -16,6 +18,8 @@ interface DrawingCanvasProps {
   onColorChange?: (color: string) => void;
   onDrawingStarted?: () => void;
   onDrawingCleared?: () => void;
+  /** Disable send while a send is in progress */
+  sendBusy?: boolean;
 }
 
 /** Imperative API for fullscreen chrome (save/trash live outside the canvas stacking context). */
@@ -39,6 +43,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
     color,
     brushSize,
     onSave,
+    onSend,
     activityType,
     level,
     activeTool,
@@ -47,6 +52,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
     onColorChange,
     onDrawingStarted,
     onDrawingCleared,
+    sendBusy = false,
   },
   ref,
 ) {
@@ -395,6 +401,11 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
     }
   };
 
+  const handleSend = () => {
+    if (sendBusy || !onSend || !canvasRef.current) return;
+    onSend(canvasRef.current.toDataURL());
+  };
+
   useImperativeHandle(
     ref,
     () => ({
@@ -463,7 +474,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
           </div>
         )}
 
-        {/* In fullscreen, save/trash render in fs-board__ui (above the dock stacking context). */}
+        {/* In fullscreen, save/send/trash render in fs-board__ui (above the dock stacking context). */}
         {!isFullscreen && (
           <div className="canvas-hud__actions" data-testid="fs-canvas-actions">
             <motion.button
@@ -472,6 +483,7 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
               onClick={handleClear}
               className="canvas-hud-action canvas-hud-action--trash"
               title="Clear Canvas"
+              type="button"
             >
               <Trash2 className="canvas-hud-action__icon" />
             </motion.button>
@@ -481,9 +493,25 @@ export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>
               onClick={handleSave}
               className="canvas-hud-action canvas-hud-action--save"
               title="Save Masterpiece"
+              type="button"
             >
               <Save className="canvas-hud-action__icon" />
             </motion.button>
+            {onSend && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleSend}
+                disabled={sendBusy}
+                className="canvas-hud-action canvas-hud-action--send"
+                title="Send to Family"
+                aria-label="Send to Family"
+                type="button"
+                data-testid="canvas-send-btn"
+              >
+                <Send className="canvas-hud-action__icon" strokeWidth={2.6} />
+              </motion.button>
+            )}
           </div>
         )}
       </div>

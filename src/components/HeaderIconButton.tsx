@@ -1,7 +1,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
-export type HeaderBtnTone = 'music' | 'help' | 'auth' | 'neutral';
+export type HeaderBtnTone = 'music' | 'help' | 'mail' | 'auth' | 'neutral';
 
 interface HeaderIconButtonProps {
   icon: LucideIcon;
@@ -44,6 +44,15 @@ const TONE_STYLES: Record<
       'shadow-[0_3px_0_0_#0284c7] hover:brightness-105 hover:-translate-y-0.5',
     active:
       'bg-gradient-to-b from-cyan-300 to-teal-500 text-white border-teal-300 ' +
+      'shadow-[0_3px_0_0_#0f766e]',
+    icon: '',
+  },
+  mail: {
+    idle:
+      'bg-gradient-to-b from-lime-200 via-emerald-300 to-teal-400 text-emerald-900 border-emerald-300 ' +
+      'shadow-[0_3px_0_0_#059669] hover:brightness-105 hover:-translate-y-0.5',
+    active:
+      'bg-gradient-to-b from-emerald-400 to-teal-500 text-white border-teal-300 ' +
       'shadow-[0_3px_0_0_#0f766e]',
     icon: '',
   },

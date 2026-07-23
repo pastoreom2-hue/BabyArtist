@@ -334,6 +334,26 @@
   background: #db2777;
 }
 
+.canvas-hud-action--send {
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 55%, #2563eb 100%);
+  color: #fff;
+  border-color: #1d4ed8;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+  /* Slightly larger so kids spot Send next to Save */
+  width: 3.1rem;
+  height: 3.1rem;
+  min-width: 3.1rem;
+  min-height: 3.1rem;
+}
+
+.canvas-hud-action--send:hover {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.canvas-hud-action--send:disabled {
+  opacity: 0.65;
+}
+
 @media (min-width: 640px) {
   .canvas-hud-card__text {
     font-size: 0.8125rem;
@@ -654,9 +674,22 @@
   border-width: 2px;
 }
 
+.fullscreen-art-mode .canvas-hud-action--send {
+  width: 3.15rem;
+  height: 3.15rem;
+  min-width: 3.15rem;
+  min-height: 3.15rem;
+  border-radius: 1rem;
+}
+
 .fullscreen-art-mode .canvas-hud-action__icon {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+.fullscreen-art-mode .canvas-hud-action--send .canvas-hud-action__icon {
+  width: 1.4rem;
+  height: 1.4rem;
 }
 
 /* Smartphones: only save/trash go to the bottom; color dock stays on top */
@@ -714,6 +747,13 @@
     height: 2.75rem;
     min-width: 2.75rem;
     min-height: 2.75rem;
+  }
+
+  .fullscreen-art-mode .canvas-hud-action--send {
+    width: 3.25rem;
+    height: 3.25rem;
+    min-width: 3.25rem;
+    min-height: 3.25rem;
   }
 }
 

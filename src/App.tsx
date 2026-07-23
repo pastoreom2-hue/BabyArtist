@@ -13,11 +13,10 @@ import { ArtworkShareActions } from './components/ArtworkShareActions';
 import { OnboardingTour } from './components/OnboardingTour';
 import { FullscreenDock } from './components/FullscreenDock';
 import { GalleryShareGuide } from './components/GalleryShareGuide';
-import { ShareHowToCard } from './components/ShareHowToCard';
 import { HelpModal } from './components/HelpModal';
 import { SaveArtworkDialog } from './components/SaveArtworkDialog';
 import { FamilyContactSettings } from './components/FamilyContactSettings';
-import { OneTouchSendModal } from './components/OneTouchSendModal';
+import { SendSuccessOverlay } from './components/SendSuccessOverlay';
 import { HeaderIconButton, HeaderLoginButton } from './components/HeaderIconButton';
 import { AdMobBanner, useAdBannerOffset } from './components/AdMobBanner';
 import { AppNavBar, type AppView } from './components/AppNavBar';
@@ -33,8 +32,12 @@ import { FRAME_STORAGE_KEY, FrameId, loadStoredFrame } from './frames';
 import { isTourCompleted } from './onboardingTour';
 import {
   type FamilyContact,
+  FAMILY_ADDRESS_REQUIRED_MSG,
+  familyRecipientLabel,
+  hasFamilyRecipient,
   loadFamilyContact,
 } from './utils/familyContact';
+import { oneTouchSendDrawing } from './utils/oneTouchSend';
 import { ActivityType, ActivityLevel, Artwork, COLORS, DAILY_CHALLENGES, STICKERS, Sticker } from './types';
 import {
   generateTempArtworkName,
@@ -44,7 +47,7 @@ import {
   type LocalArtwork,
 } from './utils/artworkNaming';
 import { downloadDataUrl } from './utils/downloadDataUrl';
-import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle, Trash2, Save, Settings2 } from 'lucide-react';
+import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle, Trash2, Save, Mail, Send, Loader2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const FRIENDLY_SAVE_ERROR = "Oops! Let's try saving again";
@@ -139,7 +142,8 @@ export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isFamilySettingsOpen, setIsFamilySettingsOpen] = useState(false);
   const [familyContact, setFamilyContact] = useState<FamilyContact>(() => loadFamilyContact());
-  const [postSaveSend, setPostSaveSend] = useState<{ dataUrl: string; title: string } | null>(null);
+  const [canvasSendBusy, setCanvasSendBusy] = useState(false);
+  const [sendCelebration, setSendCelebration] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adBannerOffset = useAdBannerOffset(isFullscreen);
   const drawingAreaRef = useRef<HTMLDivElement>(null);
@@ -392,6 +396,36 @@ export default function App() {
     setPendingSave({ dataUrl, defaultName });
   };
 
+  /** Zero-friction one-touch send from the canvas toolbar (next to Save). */
+  const handleCanvasOneTouchSend = async (dataUrl: string) => {
+    if (canvasSendBusy) return;
+
+    if (!hasFamilyRecipient(familyContact)) {
+      alert(FAMILY_ADDRESS_REQUIRED_MSG);
+      setIsFamilySettingsOpen(true);
+      return;
+    }
+
+    setCanvasSendBusy(true);
+    try {
+      const title = sanitizeArtworkFilename(autoArtworkName || generateTempArtworkName());
+      const result = await oneTouchSendDrawing({
+        dataUrl,
+        title,
+        frameId: selectedFrame,
+        contact: familyContact,
+      });
+      if (result.aborted) return;
+      if (!result.ok) {
+        alert(result.error ?? 'Could not send. Please try again!');
+        return;
+      }
+      setSendCelebration(result.recipientLabel || familyRecipientLabel(familyContact));
+    } finally {
+      setCanvasSendBusy(false);
+    }
+  };
+
   const handleSaveArtwork = async (dataUrl: string, filename?: string) => {
     const title = sanitizeArtworkFilename(filename || autoArtworkName || generateTempArtworkName());
     const dateTag = new Intl.DateTimeFormat('en-CA', {
@@ -442,7 +476,6 @@ export default function App() {
       }
 
       setPendingSave(null);
-      setPostSaveSend({ dataUrl, title });
       setAutoArtworkName(generateTempArtworkName());
       setSaveBannerError(null);
     } catch (error) {
@@ -531,11 +564,11 @@ export default function App() {
               size="large"
             />
             <HeaderIconButton
-              icon={Settings2}
+              icon={Mail}
               onClick={() => setIsFamilySettingsOpen(true)}
-              title="Family Send Settings (grown-ups)"
+              title="Family email settings (grown-ups)"
               active={isFamilySettingsOpen}
-              tone="neutral"
+              tone="mail"
               size="large"
             />
             {user ? (
@@ -567,11 +600,6 @@ export default function App() {
         </div>
 
         <AppNavBar view={view} onViewChange={setView} />
-        {!isFullscreen && view === 'gallery' && (
-          <div className="px-3 sm:px-4 pb-3 pt-1 max-w-3xl mx-auto w-full">
-            <ShareHowToCard />
-          </div>
-        )}
         {!isFullscreen && <RecentDrawings refreshKey={recentRefreshKey} />}
       </header>
 
@@ -658,6 +686,8 @@ export default function App() {
                         color={currentColor}
                         brushSize={brushSize}
                         onSave={openSaveDialog}
+                        onSend={handleCanvasOneTouchSend}
+                        sendBusy={canvasSendBusy}
                         onDrawingStarted={handleDrawingStarted}
                         onDrawingCleared={handleDrawingCleared}
                         activityType={activeActivity}
@@ -698,6 +728,26 @@ export default function App() {
                           }}
                         >
                           <Save className="canvas-hud-action__icon" />
+                        </button>
+                        <button
+                          type="button"
+                          className="canvas-hud-action canvas-hud-action--send"
+                          title={`Send to ${familyRecipientLabel(familyContact)}`}
+                          aria-label={`Send to ${familyRecipientLabel(familyContact)}`}
+                          data-testid="fs-send-btn"
+                          disabled={canvasSendBusy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const dataUrl = fullscreenCanvasRef.current?.exportDataUrl();
+                            if (dataUrl) void handleCanvasOneTouchSend(dataUrl);
+                          }}
+                        >
+                          {canvasSendBusy ? (
+                            <Loader2 className="canvas-hud-action__icon animate-spin" aria-hidden />
+                          ) : (
+                            <Send className="canvas-hud-action__icon" strokeWidth={2.6} aria-hidden />
+                          )}
                         </button>
                       </div>
 
@@ -803,6 +853,8 @@ export default function App() {
                       color={currentColor}
                       brushSize={brushSize}
                         onSave={openSaveDialog}
+                        onSend={handleCanvasOneTouchSend}
+                        sendBusy={canvasSendBusy}
                         onDrawingStarted={handleDrawingStarted}
                         onDrawingCleared={handleDrawingCleared}
                       activityType={activeActivity}
@@ -928,11 +980,7 @@ export default function App() {
                 <FrameSelector selectedFrame={selectedFrame} onSelect={setSelectedFrame} />
               </div>
 
-              <GalleryShareGuide
-                selectedFrame={selectedFrame}
-                previewUrl={savedArt[0]?.dataUrl ?? artworks[0]?.dataUrl}
-                familyContact={familyContact}
-              />
+              <GalleryShareGuide />
               
               {savedArt.length === 0 && artworks.length === 0 ? (
                 <div className="bg-white p-12 rounded-3xl shadow-xl text-center flex flex-col items-center gap-6 border-4 border-blue-200">
@@ -1065,17 +1113,10 @@ export default function App() {
         }}
       />
 
-      <OneTouchSendModal
-        isOpen={!!postSaveSend}
-        previewUrl={postSaveSend?.dataUrl ?? ''}
-        title={postSaveSend?.title ?? 'My Drawing.png'}
-        frameId={selectedFrame}
-        contact={familyContact}
-        onClose={() => setPostSaveSend(null)}
-        onOpenSettings={() => {
-          setPostSaveSend(null);
-          setIsFamilySettingsOpen(true);
-        }}
+      <SendSuccessOverlay
+        isOpen={!!sendCelebration}
+        recipientLabel={sendCelebration ?? 'Family'}
+        onClose={() => setSendCelebration(null)}
       />
 
       {saveBannerError && (

@@ -1,77 +1,26 @@
-import React, { useState } from 'react';
-import { Share2 } from 'lucide-react';
-import { FrameId } from '../frames';
-import { ArtworkShareActions } from './ArtworkShareActions';
-import {
-  type FamilyContact,
-  familyRecipientLabel,
-  loadFamilyContact,
-} from '../utils/familyContact';
+import React from 'react';
+import { Send } from 'lucide-react';
 
-const DEMO_ART =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
-      <rect width="400" height="300" fill="#fafaf9"/>
-      <circle cx="200" cy="130" r="60" fill="#f472b6"/>
-      <text x="200" y="240" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="bold" fill="#78716c">My Drawing</text>
-    </svg>`
-  );
-
-interface GalleryShareGuideProps {
-  selectedFrame: FrameId;
-  previewUrl?: string;
-  familyContact?: FamilyContact;
-}
-
-export const GalleryShareGuide: React.FC<GalleryShareGuideProps> = ({
-  selectedFrame,
-  previewUrl,
-  familyContact,
-}) => {
-  const shareUrl = previewUrl || DEMO_ART;
-  const [successLabel, setSuccessLabel] = useState<string | null>(null);
-  const contact = familyContact ?? loadFamilyContact();
-  const label = familyRecipientLabel(contact);
-
-  return (
-    <section
-      data-tour="tour-step-3"
-      className="mb-6 p-3 sm:p-4 rounded-2xl border border-stone-200/80 bg-white shadow-sm"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="p-1.5 bg-stone-100 rounded-lg text-stone-600">
-          <Share2 size={16} strokeWidth={2.25} />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-stone-800">Send to Family</h3>
-          <p className="text-[10px] text-stone-400">
-            {contact.email || contact.phone
-              ? `One-touch send to ${label}`
-              : '모바일: 공유 → 카카오톡 · PC: 파일 저장 후 앨범 첨부 (붙여넣기 불가)'}
-          </p>
-        </div>
+/**
+ * Short tip only — the real Send control lives on the drawing board
+ * (blue paper-plane next to Save). Keeps the Send Drawing tab uncluttered.
+ */
+export const GalleryShareGuide: React.FC = () => (
+  <section
+    data-tour="tour-step-3"
+    data-testid="gallery-share-tip"
+    className="mb-6 px-3 py-3 rounded-2xl border border-sky-100 bg-sky-50/80"
+  >
+    <div className="flex items-start gap-2.5">
+      <div className="p-1.5 rounded-lg bg-blue-500 text-white shrink-0">
+        <Send size={16} strokeWidth={2.5} />
       </div>
-      <ArtworkShareActions
-        dataUrl={shareUrl}
-        title="BabyArtist Masterpiece.png"
-        frameId={selectedFrame}
-        contact={contact}
-        variant="hero"
-        onSuccess={(name) => {
-          setSuccessLabel(name);
-          window.setTimeout(() => setSuccessLabel(null), 3200);
-        }}
-      />
-      {successLabel && (
-        <p
-          className="mt-3 text-center text-sm font-bold text-pink-600 bg-pink-50 border border-pink-100 rounded-xl px-3 py-2"
-          role="status"
-          data-testid="gallery-send-success"
-        >
-          Sent to {successLabel} successfully!
+      <div>
+        <h3 className="text-sm font-semibold text-stone-800">Send from your drawing</h3>
+        <p className="text-xs text-stone-500 mt-0.5 leading-snug">
+          Tap the blue paper-plane next to Save on the whiteboard — one touch to family.
         </p>
-      )}
-    </section>
-  );
-};
+      </div>
+    </div>
+  </section>
+);

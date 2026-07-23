@@ -61,6 +61,10 @@ export function hasFamilyRecipient(contact: FamilyContact): boolean {
   return Boolean(contact.email || contact.phone);
 }
 
+/** Shown when One-Touch Send is tapped with no preset email/phone. */
+export const FAMILY_ADDRESS_REQUIRED_MSG =
+  'Please enter the recipient address in advance.';
+
 export function familyRecipientLabel(contact: FamilyContact): string {
   if (contact.displayName) return contact.displayName;
   if (contact.email) return contact.email;

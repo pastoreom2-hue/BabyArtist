@@ -1,6 +1,7 @@
 import { FrameId } from '../frames';
 import {
   FamilyContact,
+  FAMILY_ADDRESS_REQUIRED_MSG,
   familyRecipientLabel,
   hasFamilyRecipient,
   loadFamilyContact,
@@ -139,11 +140,7 @@ export async function oneTouchSendDrawing(options: OneTouchSendOptions): Promise
 
     downloadFramedBuffer(buffer, name);
     if (!hasFamilyRecipient(contact)) {
-      alert(
-        '부모님께 부탁해요!\n헤더의 가족 설정에서 이메일이나 전화번호를 저장하면\n한 번에 보낼 수 있어요.\n\n' +
-          KAKAO_ATTACH_TIP
-      );
-      openMailto();
+      alert(FAMILY_ADDRESS_REQUIRED_MSG);
     } else {
       alert(KAKAO_ATTACH_TIP);
     }

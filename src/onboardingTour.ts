@@ -22,7 +22,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     target: 'tour-step-3',
     view: 'gallery',
-    message: '👵 멀리 계신 할머니께 액자에 담긴 그림을 터치 한 번으로 바로 선물해 보세요!',
+    message: '✈️ 그림판에서 Save 옆 파란 비행기(Send)를 누르면 가족에게 바로 보낼 수 있어요!',
   },
 ];
 

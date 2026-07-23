@@ -177,7 +177,7 @@ export const FamilyContactSettings: React.FC<FamilyContactSettingsProps> = ({
 
                   <p className="text-[11px] text-stone-500 leading-snug flex items-start gap-1.5">
                     <Heart size={12} className="text-pink-400 shrink-0 mt-0.5" />
-                    After save, kids tap <strong className="font-bold">Send to Family</strong> — no typing
+                    After setup, kids tap the blue paper-plane next to Save — no typing
                     addresses.
                   </p>
 
