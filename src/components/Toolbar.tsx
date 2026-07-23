@@ -27,8 +27,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onToolChange,
 }) => {
   return (
-    <div className="flex flex-col gap-3 sm:gap-4 p-1 sm:p-2">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="flex flex-col gap-3 sm:gap-4 p-2 sm:p-3 w-full max-w-full box-border overflow-x-hidden">
+      <div className="grid grid-cols-2 gap-2 w-full max-w-full">
         <motion.button
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}

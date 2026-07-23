@@ -134,6 +134,14 @@
     min-height: 68vh;
     aspect-ratio: auto;
   }
+
+  /* Keep toolbar paint controls fully in view on short landscape */
+  .app-sidebar-panel {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-inline: 0.15rem;
+  }
 }
 
 .canvas-container {
@@ -146,7 +154,8 @@
   inset: 0;
   z-index: 999;
   pointer-events: none;
-  overflow: hidden;
+  /* Visible so save/trash aren’t clipped by rounded corners */
+  overflow: visible;
 }
 
 .canvas-hud__hint {
@@ -167,11 +176,34 @@
 
 .canvas-hud__actions {
   position: absolute;
-  right: max(0.75rem, 2.5%);
-  bottom: max(0.75rem, 2.5%);
+  box-sizing: border-box;
   display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  /* Clear rounded corners + device safe areas (critical in landscape) */
+  right: max(1.25rem, env(safe-area-inset-right, 0px) + 0.85rem);
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 0px) + 0.85rem);
+  max-width: calc(100% - 2.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  padding: 0;
   pointer-events: auto;
+}
+
+/* Non-fullscreen golden frame (inset-2 + border) — keep actions inside the white board */
+.canvas-hud--framed .canvas-hud__actions {
+  right: max(1.65rem, env(safe-area-inset-right, 0px) + 1.35rem);
+  bottom: max(1.65rem, env(safe-area-inset-bottom, 0px) + 1.35rem);
+}
+
+.canvas-hud--framed .canvas-hud__legend {
+  left: max(1.35rem, env(safe-area-inset-left, 0px) + 1rem);
+  max-width: min(22rem, calc(100% - 8rem));
+}
+
+.canvas-hud--framed .canvas-hud__hint {
+  left: max(1.35rem, env(safe-area-inset-left, 0px) + 1rem);
+  right: max(5rem, 14%);
 }
 
 .canvas-hud-card {
@@ -261,6 +293,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
   width: 2.75rem;
   height: 2.75rem;
   min-width: 2.75rem;
@@ -322,6 +356,17 @@
   .canvas-hud__legend {
     bottom: max(6rem, 15%);
     max-width: min(28rem, calc(100% - 7.5rem));
+  }
+
+  /* sm golden frame uses inset-4 + thicker border */
+  .canvas-hud--framed .canvas-hud__actions {
+    right: max(2.15rem, env(safe-area-inset-right, 0px) + 1.85rem);
+    bottom: max(2.15rem, env(safe-area-inset-bottom, 0px) + 1.85rem);
+  }
+
+  .canvas-hud--framed .canvas-hud__legend,
+  .canvas-hud--framed .canvas-hud__hint {
+    left: max(2rem, env(safe-area-inset-left, 0px) + 1.65rem);
   }
 }
 
@@ -410,15 +455,22 @@
 .fullscreen-art-mode .fs-floating-dock {
   position: absolute;
   left: 50%;
-  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px) + 0.35rem);
   transform: translateX(-50%);
   z-index: 210;
+  box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  max-width: calc(100% - 1.25rem);
-  padding: 0.4rem 0.5rem;
+  width: max-content;
+  max-width: calc(
+    100% - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)
+  );
+  padding: 0.4rem 0.65rem;
+  padding-left: max(0.65rem, 0.5rem);
+  padding-right: max(0.65rem, 0.5rem);
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -559,8 +611,9 @@
 
 .fullscreen-art-mode .fs-canvas-actions,
 .fullscreen-art-mode .canvas-hud__actions {
-  right: max(0.65rem, env(safe-area-inset-right, 0px));
-  bottom: max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 4rem));
+  right: max(1.1rem, env(safe-area-inset-right, 0px) + 0.75rem);
+  bottom: max(4.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem));
+  max-width: calc(100% - 2.25rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
 }
 
 .fullscreen-art-mode .canvas-hud-action {
@@ -605,7 +658,8 @@
 
   .fullscreen-art-mode .fs-canvas-actions,
   .fullscreen-art-mode .canvas-hud__actions {
-    bottom: max(4.6rem, calc(env(safe-area-inset-bottom, 0px) + 4.1rem));
+    right: max(1rem, env(safe-area-inset-right, 0px) + 0.7rem);
+    bottom: max(4.85rem, calc(env(safe-area-inset-bottom, 0px) + 4.35rem));
   }
 }
 
@@ -640,23 +694,37 @@
 
 /* Short landscape (phones/tablets sideways): vertical dock on the left */
 @media (orientation: landscape) and (max-height: 520px) {
+  .canvas-hud__actions {
+    right: max(1.35rem, env(safe-area-inset-right, 0px) + 1rem);
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
+  .canvas-hud--framed .canvas-hud__actions {
+    right: max(1.85rem, env(safe-area-inset-right, 0px) + 1.45rem);
+    bottom: max(1.5rem, env(safe-area-inset-bottom, 0px) + 1.15rem);
+  }
+
   .fullscreen-art-mode .fs-floating-dock {
-    left: max(0.55rem, env(safe-area-inset-left, 0px));
+    left: max(0.65rem, env(safe-area-inset-left, 0px) + 0.25rem);
     top: 50%;
     bottom: auto;
     transform: translateY(-50%);
     flex-direction: column;
+    width: max-content;
     max-width: none;
-    max-height: calc(100% - 1rem);
+    max-height: calc(
+      100% - 1.25rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+    );
     border-radius: 1.25rem;
-    padding: 0.45rem 0.4rem;
+    padding: 0.5rem 0.45rem;
+    box-sizing: border-box;
   }
 
   .fullscreen-art-mode .fs-dock-scroll {
     flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
-    max-height: calc(100dvh - 4.5rem);
+    max-height: calc(100dvh - 4.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   }
 
   .fullscreen-art-mode .fs-dock-group {
@@ -670,18 +738,18 @@
 
   .fullscreen-art-mode .fs-canvas-actions,
   .fullscreen-art-mode .canvas-hud__actions {
-    right: max(0.75rem, env(safe-area-inset-right, 0px));
-    bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    right: max(1.15rem, env(safe-area-inset-right, 0px) + 0.85rem);
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px) + 0.65rem);
   }
 
   .fullscreen-art-mode .canvas-hud__legend {
-    left: max(4.25rem, calc(env(safe-area-inset-left, 0px) + 3.75rem));
-    bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
-    max-width: min(20rem, calc(100% - 8rem));
+    left: max(4.5rem, calc(env(safe-area-inset-left, 0px) + 4rem));
+    bottom: max(0.85rem, env(safe-area-inset-bottom, 0px) + 0.5rem);
+    max-width: min(20rem, calc(100% - 9rem - env(safe-area-inset-right, 0px)));
   }
 
   .fullscreen-art-mode .canvas-hud__hint {
-    left: max(4.25rem, calc(env(safe-area-inset-left, 0px) + 3.75rem));
+    left: max(4.5rem, calc(env(safe-area-inset-left, 0px) + 4rem));
   }
 }
 

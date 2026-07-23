@@ -683,7 +683,7 @@ export default function App() {
                 ) : (
                 <div className="app-draw-grid grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 lg:gap-8 flex-1 relative">
                   <div className="app-sidebar-panel md:col-span-1 order-2 md:order-1 flex flex-col gap-4">
-                    <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm">
+                    <div className="rounded-2xl border border-stone-200/80 bg-white p-3 sm:p-4 shadow-sm w-full max-w-full box-border overflow-x-hidden">
                         <Toolbar
                           currentColor={currentColor}
                           onColorChange={setCurrentColor}

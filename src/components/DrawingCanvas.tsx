@@ -324,7 +324,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }`}
       />
 
-      <div className="canvas-hud" data-testid="canvas-hud">
+      <div className={`canvas-hud${isFullscreen ? '' : ' canvas-hud--framed'}`} data-testid="canvas-hud">
         {isActivityMode && activityHint && (
           <div className="canvas-hud__hint" data-testid="canvas-activity-hint">
             <div className="canvas-hud-card canvas-hud-card--hint">
