@@ -22,6 +22,7 @@ import { AppNavBar, type AppView } from './components/AppNavBar';
 import { SavedDrawingsPanel } from './components/SavedDrawingsPanel';
 import { RecentDrawings } from './components/RecentDrawings';
 import { InstallAppPrompt } from './components/InstallAppPrompt';
+import { ProjectStoryHero } from './components/ProjectStoryHero';
 import {
   migrateLocalStorageToIdbIfEmpty,
   saveDrawingToIdb,
@@ -540,28 +541,40 @@ export default function App() {
                 style={isFullscreen ? { height: '100dvh', width: '100vw' } : {}}
               >
                 {!isFullscreen && (
-                  <section className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-lime-50/80 px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                         <ActivitySelector 
-                            activeActivity={activeActivity} 
-                            onActivityChange={setActiveActivity} 
-                            activeLevel={activeLevel}
-                            onLevelChange={setActiveLevel}
-                            onShowChallenge={() => setIsChallengeOpen(true)}
-                          />
-                       </div>
-                      <button
-                        type="button"
-                        onClick={toggleFullscreen}
-                        className="flex-shrink-0 inline-flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-white border border-stone-200 text-stone-600 text-sm sm:text-base font-bold hover:border-stone-300 hover:bg-stone-50 transition-all"
-                        title="Fullscreen Art Mode"
-                      >
-                        <Maximize2 size={18} />
-                        <span className="hidden sm:inline">Fullscreen</span>
-                      </button>
-                    </div>
-                  </section>
+                  <>
+                    <ProjectStoryHero
+                      onStartDrawing={() => {
+                        document
+                          .getElementById('drawing-studio')
+                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                    />
+                    <section
+                      id="drawing-studio"
+                      className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 via-yellow-50 to-lime-50/80 px-3 py-3 sm:px-4 sm:py-3.5 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                           <ActivitySelector 
+                              activeActivity={activeActivity} 
+                              onActivityChange={setActiveActivity} 
+                              activeLevel={activeLevel}
+                              onLevelChange={setActiveLevel}
+                              onShowChallenge={() => setIsChallengeOpen(true)}
+                            />
+                         </div>
+                        <button
+                          type="button"
+                          onClick={toggleFullscreen}
+                          className="flex-shrink-0 inline-flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-white border border-stone-200 text-stone-600 text-sm sm:text-base font-bold hover:border-stone-300 hover:bg-stone-50 transition-all"
+                          title="Fullscreen Art Mode"
+                        >
+                          <Maximize2 size={18} />
+                          <span className="hidden sm:inline">Fullscreen</span>
+                        </button>
+                      </div>
+                    </section>
+                  </>
                 )}
 
                 {isFullscreen ? (
