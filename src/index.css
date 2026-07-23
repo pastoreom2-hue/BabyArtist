@@ -146,6 +146,9 @@
 
 .canvas-container {
   touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* ─── In-canvas HUD (hints, color guide, actions) ───────────────────── */
@@ -422,6 +425,12 @@
   justify-content: stretch;
   padding: 0;
   background: #ffffff;
+  height: 100%;
+  max-height: 100svh;
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -436,6 +445,8 @@
   box-shadow: none;
   overflow: hidden;
   box-sizing: border-box;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 .fullscreen-art-mode .fs-board__canvas {
@@ -451,32 +462,35 @@
   pointer-events: none;
 }
 
-/* Slim floating dock — bottom on most screens; side on squat landscape */
+/* Slim floating dock — TOP on portrait (avoids iOS Safari bottom chrome); side on squat landscape */
 .fullscreen-art-mode .fs-floating-dock {
   position: absolute;
-  left: 50%;
-  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px) + 0.35rem);
-  transform: translateX(-50%);
+  /* Top-left under status bar — always visible on iPhone portrait */
+  top: max(0.7rem, env(safe-area-inset-top, 0px) + 0.4rem);
+  left: max(0.55rem, env(safe-area-inset-left, 0px) + 0.2rem);
+  bottom: auto;
+  right: auto;
+  transform: none;
   z-index: 210;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.4rem;
   width: max-content;
+  /* Leave room for save/trash on the right */
   max-width: calc(
-    100% - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)
+    100% - 5.75rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)
   );
-  padding: 0.4rem 0.65rem;
-  padding-left: max(0.65rem, 0.5rem);
-  padding-right: max(0.65rem, 0.5rem);
+  padding: 0.45rem 0.65rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
+  /* Higher contrast so the bar isn’t lost on the white board */
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.16);
   pointer-events: auto;
 }
 
@@ -598,43 +612,61 @@
 }
 
 .fullscreen-art-mode .canvas-hud__hint {
-  top: max(0.65rem, env(safe-area-inset-top, 0px));
+  /* Sit below the top dock + actions */
+  top: max(4.25rem, calc(env(safe-area-inset-top, 0px) + 3.75rem));
   left: max(0.65rem, env(safe-area-inset-left, 0px));
   right: max(0.65rem, env(safe-area-inset-right, 0px));
 }
 
 .fullscreen-art-mode .canvas-hud__legend {
   left: max(0.65rem, env(safe-area-inset-left, 0px));
-  bottom: max(4.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem));
-  max-width: min(22rem, calc(100% - 6.25rem));
+  bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem));
+  max-width: min(22rem, calc(100% - 1.5rem));
 }
 
-.fullscreen-art-mode .fs-canvas-actions,
-.fullscreen-art-mode .canvas-hud__actions {
-  right: max(1.1rem, env(safe-area-inset-right, 0px) + 0.75rem);
-  bottom: max(4.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.25rem));
-  max-width: calc(100% - 2.25rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+/*
+ * Fullscreen save/trash live in fs-board__ui (not under the canvas z-index).
+ * Portrait: top-right, beside the color dock.
+ */
+.fullscreen-art-mode .fs-canvas-actions {
+  position: absolute;
+  z-index: 220;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  top: max(0.7rem, env(safe-area-inset-top, 0px) + 0.4rem);
+  right: max(0.55rem, env(safe-area-inset-right, 0px) + 0.2rem);
+  bottom: auto;
+  left: auto;
+  max-width: calc(100% - 1.25rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  pointer-events: auto;
 }
 
 .fullscreen-art-mode .canvas-hud-action {
-  width: 2.5rem;
-  height: 2.5rem;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
-  border-radius: 0.85rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: 0.9rem;
   border-width: 2px;
 }
 
 .fullscreen-art-mode .canvas-hud-action__icon {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 /* Phones: slightly denser dock, still tappable */
 @media (max-width: 480px) {
   .fullscreen-art-mode .fs-floating-dock {
     gap: 0.3rem;
-    padding: 0.35rem 0.4rem;
+    padding: 0.35rem 0.5rem;
+    max-width: calc(
+      100% - 5.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)
+    );
   }
 
   .fullscreen-art-mode .fs-dock-swatch {
@@ -652,14 +684,20 @@
   }
 
   .fullscreen-art-mode .canvas-hud__legend {
-    bottom: max(4.85rem, calc(env(safe-area-inset-bottom, 0px) + 4.35rem));
-    max-width: calc(100% - 5.75rem);
+    bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.55rem));
+    max-width: calc(100% - 1.25rem);
   }
 
-  .fullscreen-art-mode .fs-canvas-actions,
-  .fullscreen-art-mode .canvas-hud__actions {
-    right: max(1rem, env(safe-area-inset-right, 0px) + 0.7rem);
-    bottom: max(4.85rem, calc(env(safe-area-inset-bottom, 0px) + 4.35rem));
+  .fullscreen-art-mode .fs-canvas-actions {
+    top: max(0.65rem, env(safe-area-inset-top, 0px) + 0.35rem);
+    right: max(0.5rem, env(safe-area-inset-right, 0px) + 0.15rem);
+  }
+
+  .fullscreen-art-mode .canvas-hud-action {
+    width: 2.6rem;
+    height: 2.6rem;
+    min-width: 2.6rem;
+    min-height: 2.6rem;
   }
 }
 
@@ -736,8 +774,9 @@
     height: 1px;
   }
 
-  .fullscreen-art-mode .fs-canvas-actions,
-  .fullscreen-art-mode .canvas-hud__actions {
+  .fullscreen-art-mode .fs-canvas-actions {
+    /* Landscape + side dock: bottom-right is clear */
+    top: auto;
     right: max(1.15rem, env(safe-area-inset-right, 0px) + 0.85rem);
     bottom: max(1rem, env(safe-area-inset-bottom, 0px) + 0.65rem);
   }

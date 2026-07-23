@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, signIn, logOut, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, orderBy } from 'firebase/firestore';
-import { DrawingCanvas } from './components/DrawingCanvas';
+import { DrawingCanvas, type DrawingCanvasHandle } from './components/DrawingCanvas';
 import { Toolbar } from './components/Toolbar';
 import { ActivitySelector } from './components/ActivitySelector';
 import { Gallery } from './components/Gallery';
@@ -38,7 +38,7 @@ import {
   type LocalArtwork,
 } from './utils/artworkNaming';
 import { downloadDataUrl } from './utils/downloadDataUrl';
-import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle } from 'lucide-react';
+import { LogOut, Palette, Image as ImageIcon, Heart, Sparkles, User as UserIcon, Maximize2, Music, Star, X, Share2, Trophy, HelpCircle, Trash2, Save } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const FRIENDLY_SAVE_ERROR = "Oops! Let's try saving again";
@@ -134,6 +134,7 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const adBannerOffset = useAdBannerOffset(isFullscreen);
   const drawingAreaRef = useRef<HTMLDivElement>(null);
+  const fullscreenCanvasRef = useRef<DrawingCanvasHandle>(null);
 
   useEffect(() => {
     const day = new Date().getDate();
@@ -245,39 +246,41 @@ export default function App() {
   };
 
   const toggleFullscreen = () => {
-    const el = document.documentElement;
-    
-    const isCurrentlyFullscreen = !!(
-      document.fullscreenElement || 
-      (document as any).webkitFullscreenElement || 
-      isFullscreen
-    );
-
-    if (!isCurrentlyFullscreen) {
+    if (!isFullscreen) {
       setActiveTool('pen');
       setSelectedSticker(null);
-      if (el.requestFullscreen) {
-        el.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => setIsFullscreen(true));
-      } else if ((el as any).webkitRequestFullscreen) {
-        (el as any).webkitRequestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        setIsFullscreen(true);
+      // CSS fullscreen first — reliable on iPhone (native FS is flaky / can wipe UI).
+      setIsFullscreen(true);
+      if (!isCoarsePointer()) {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          el.requestFullscreen().catch(() => {});
+        } else if ((el as any).webkitRequestFullscreen) {
+          (el as any).webkitRequestFullscreen();
+        }
       }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
+      setIsFullscreen(false);
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen && (document as any).webkitFullscreenElement) {
         (document as any).webkitExitFullscreen();
       }
-      setIsFullscreen(false);
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isCurrentlyFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
-      setIsFullscreen(isCurrentlyFs);
+      const nativeFs = !!(
+        document.fullscreenElement || (document as any).webkitFullscreenElement
+      );
+      // On phones, CSS fullscreen owns state — ignore native FS exit events
+      // (iOS often fires these and would hide the color dock / save controls).
+      if (isCoarsePointer()) {
+        if (nativeFs) setIsFullscreen(true);
+        return;
+      }
+      setIsFullscreen(nativeFs);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -318,6 +321,31 @@ export default function App() {
       document.removeEventListener('touchmove', preventDrag);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+
+    const body = document.body;
+    const html = document.documentElement;
+    const prevBodyOverflow = body.style.overflow;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+
+    body.style.overflow = 'hidden';
+    html.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    html.style.overscrollBehavior = 'none';
+
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overscrollBehavior = prevBodyOverscroll;
+      html.style.overscrollBehavior = '';
+      window.scrollTo(scrollX, scrollY);
+    };
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!user) {
@@ -532,7 +560,7 @@ export default function App() {
       <main
         className={`${
           isFullscreen
-            ? 'fixed inset-0 z-[100] bg-white w-screen h-[100dvh] m-0 p-0 max-w-none'
+            ? 'fixed inset-0 z-[100] bg-white w-full h-[100svh] max-h-[100svh] m-0 p-0 max-w-none overscroll-none'
             : 'app-main'
         }`}
         style={{ paddingBottom: isFullscreen ? undefined : adBannerOffset }}
@@ -550,10 +578,22 @@ export default function App() {
                 ref={drawingAreaRef}
                 className={`flex flex-col ${
                   isFullscreen 
-                    ? 'fullscreen-art-mode !fixed !inset-0 !left-0 !top-0 !w-screen !h-screen overflow-hidden z-[102] m-0 p-0 touch-none select-none' 
+                    ? 'fullscreen-art-mode !fixed !inset-0 !left-0 !top-0 !w-full overflow-hidden z-[102] m-0 p-0 touch-none select-none overscroll-none' 
                     : 'gap-5 sm:gap-6'
                 }`}
-                style={isFullscreen ? { height: '100dvh', width: '100vw' } : {}}
+                style={
+                  isFullscreen
+                    ? {
+                        // svh = stable small viewport — avoids iPad chrome show/hide resize thrash
+                        height: '100svh',
+                        maxHeight: '100svh',
+                        width: '100%',
+                        minHeight: '-webkit-fill-available',
+                        touchAction: 'none',
+                        overscrollBehavior: 'none',
+                      }
+                    : undefined
+                }
               >
                 {!isFullscreen && (
                   <>
@@ -596,6 +636,7 @@ export default function App() {
                   <div className="fs-board" data-testid="fs-board">
                     <div className="fs-board__canvas">
                       <DrawingCanvas
+                        ref={fullscreenCanvasRef}
                         color={currentColor}
                         brushSize={brushSize}
                         onSave={openSaveDialog}
@@ -612,6 +653,31 @@ export default function App() {
 
                     {/* Slim essential tools dock — keeps canvas spacious */}
                     <div className="fs-board__ui" data-testid="fs-board-ui">
+                      {/* Save/trash in UI layer (above dock) — visible on portrait iPhone */}
+                      <div className="fs-canvas-actions" data-testid="fs-canvas-actions">
+                        <button
+                          type="button"
+                          className="canvas-hud-action canvas-hud-action--trash"
+                          title="Clear Canvas"
+                          aria-label="Clear Canvas"
+                          onClick={() => fullscreenCanvasRef.current?.clear()}
+                        >
+                          <Trash2 className="canvas-hud-action__icon" />
+                        </button>
+                        <button
+                          type="button"
+                          className="canvas-hud-action canvas-hud-action--save"
+                          title="Save Masterpiece"
+                          aria-label="Save Masterpiece"
+                          onClick={() => {
+                            const dataUrl = fullscreenCanvasRef.current?.exportDataUrl();
+                            if (dataUrl) openSaveDialog(dataUrl);
+                          }}
+                        >
+                          <Save className="canvas-hud-action__icon" />
+                        </button>
+                      </div>
+
                       <FullscreenDock
                         currentColor={currentColor}
                         onColorChange={(color) => {

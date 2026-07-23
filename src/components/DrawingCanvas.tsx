@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { motion } from 'motion/react';
 import { ActivityType, ActivityLevel, Sticker } from '../types';
 import { Trash2, Save } from 'lucide-react';
@@ -18,6 +18,12 @@ interface DrawingCanvasProps {
   onDrawingCleared?: () => void;
 }
 
+/** Imperative API for fullscreen chrome (save/trash live outside the canvas stacking context). */
+export type DrawingCanvasHandle = {
+  clear: () => void;
+  exportDataUrl: () => string | null;
+};
+
 const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, 2);
 
 const getPointerCoordinates = (canvas: HTMLCanvasElement, e: PointerEvent) => {
@@ -28,19 +34,22 @@ const getPointerCoordinates = (canvas: HTMLCanvasElement, e: PointerEvent) => {
   };
 };
 
-export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
-  color,
-  brushSize,
-  onSave,
-  activityType,
-  level,
-  activeTool,
-  selectedSticker,
-  isFullscreen,
-  onColorChange,
-  onDrawingStarted,
-  onDrawingCleared,
-}) => {
+export const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(function DrawingCanvas(
+  {
+    color,
+    brushSize,
+    onSave,
+    activityType,
+    level,
+    activeTool,
+    selectedSticker,
+    isFullscreen,
+    onColorChange,
+    onDrawingStarted,
+    onDrawingCleared,
+  },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const templateRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,6 +58,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const isDrawingRef = useRef(false);
   const hasStartedDrawingRef = useRef(false);
+  const pendingResizeRef = useRef(false);
+  const lastSizeRef = useRef({ w: 0, h: 0 });
   const onDrawingStartedRef = useRef(onDrawingStarted);
   onDrawingStartedRef.current = onDrawingStarted;
 
@@ -85,7 +96,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     // Keep activity art inside the white board, clear of HUD / dock chrome
     const insets = isFullscreen
-      ? { top: 64, right: 20, bottom: 112, left: 20 }
+      ? { top: 72, right: 20, bottom: 48, left: 20 }
       : { top: 72, right: 24, bottom: 108, left: 24 };
 
     drawActivityTemplate(ctx, activityType, level, width, height, insets);
@@ -98,6 +109,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       if (!canvas || !template || width <= 0 || height <= 0) return;
 
       const ratio = pixelRatioRef.current;
+      const nextW = Math.round(width * ratio);
+      const nextH = Math.round(height * ratio);
+
+      // Skip no-op resizes — iPad Safari fires tiny viewport jitters that wipe strokes.
+      if (
+        canvas.width === nextW &&
+        canvas.height === nextH &&
+        canvas.style.width === `${width}px` &&
+        canvas.style.height === `${height}px`
+      ) {
+        return;
+      }
+
       let snapshot: HTMLCanvasElement | null = null;
 
       if (preserveDrawing && canvas.width > 0 && canvas.height > 0) {
@@ -108,23 +132,33 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       }
 
       [canvas, template].forEach((target) => {
-        target.width = Math.round(width * ratio);
-        target.height = Math.round(height * ratio);
+        target.width = nextW;
+        target.height = nextH;
         target.style.width = `${width}px`;
         target.style.height = `${height}px`;
       });
 
       const context = canvas.getContext('2d');
       if (context) {
+        // Restore in device-pixel space BEFORE scale — more reliable on iPad Safari.
         context.setTransform(1, 0, 0, 1, 0, 0);
+        if (snapshot) {
+          context.drawImage(
+            snapshot,
+            0,
+            0,
+            snapshot.width,
+            snapshot.height,
+            0,
+            0,
+            nextW,
+            nextH,
+          );
+        }
         context.scale(ratio, ratio);
         context.lineCap = 'round';
         context.lineJoin = 'round';
         contextRef.current = context;
-
-        if (snapshot) {
-          context.drawImage(snapshot, 0, 0, snapshot.width, snapshot.height, 0, 0, width, height);
-        }
       }
 
       const templateCtx = template.getContext('2d');
@@ -212,11 +246,20 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
     isDrawingRef.current = false;
     setIsDrawing(false);
-  }, []);
+
+    // Apply any resize that was deferred mid-stroke (prevents wipe + shake on iPad).
+    if (pendingResizeRef.current && containerRef.current) {
+      pendingResizeRef.current = false;
+      const { clientWidth: width, clientHeight: height } = containerRef.current;
+      applyCanvasDimensions(width, height, true);
+      lastSizeRef.current = { w: width, h: height };
+    }
+  }, [applyCanvasDimensions]);
 
   const handlePointerDown = useCallback(
     (e: PointerEvent) => {
-      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
+      // Block scroll/zoom steal so iPad doesn't bounce the page mid-stroke.
+      if (e.cancelable) e.preventDefault();
       canvasRef.current?.setPointerCapture(e.pointerId);
 
       if (configRef.current.activeTool === 'sticker') {
@@ -231,7 +274,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const handlePointerMove = useCallback(
     (e: PointerEvent) => {
       if (!isDrawingRef.current) return;
-      if (e.pointerType === 'touch' && e.cancelable) e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       draw(e);
     },
     [draw],
@@ -258,7 +301,27 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       pixelRatioRef.current = getPixelRatio();
       const width = container.clientWidth;
       const height = container.clientHeight;
+      if (width <= 0 || height <= 0) return;
+
+      // Ignore sub-pixel / 1px jitter from iPad visual viewport chrome.
+      const prev = lastSizeRef.current;
+      if (
+        preserveDrawing &&
+        prev.w > 0 &&
+        Math.abs(prev.w - width) < 2 &&
+        Math.abs(prev.h - height) < 2
+      ) {
+        return;
+      }
+
+      // Never reset the bitmap while the finger/pencil is down.
+      if (isDrawingRef.current) {
+        pendingResizeRef.current = true;
+        return;
+      }
+
       applyCanvasDimensions(width, height, preserveDrawing);
+      lastSizeRef.current = { w: width, h: height };
     };
 
     syncCanvasSize(false);
@@ -270,19 +333,33 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     const onWindowResize = () => syncCanvasSize(true);
     window.addEventListener('resize', onWindowResize);
+    // iPad Safari: visual viewport changes when bars show/hide — don't thrash canvas.
+    const onVvResize = () => {
+      if (isDrawingRef.current) {
+        pendingResizeRef.current = true;
+        return;
+      }
+      // Only sync if container box actually changed; ignore pure visualViewport jitter.
+      syncCanvasSize(true);
+    };
+    window.visualViewport?.addEventListener('resize', onVvResize);
 
-    canvas.addEventListener('pointerdown', handlePointerDown);
-    canvas.addEventListener('pointermove', handlePointerMove);
+    canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
+    canvas.addEventListener('pointermove', handlePointerMove, { passive: false });
     canvas.addEventListener('pointerup', handlePointerEnd);
+    // Don't treat cancel as instantly fatal for size — still end the stroke cleanly.
     canvas.addEventListener('pointercancel', handlePointerEnd);
+    canvas.addEventListener('lostpointercapture', handlePointerEnd);
 
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener('resize', onWindowResize);
+      window.visualViewport?.removeEventListener('resize', onVvResize);
       canvas.removeEventListener('pointerdown', handlePointerDown);
       canvas.removeEventListener('pointermove', handlePointerMove);
       canvas.removeEventListener('pointerup', handlePointerEnd);
       canvas.removeEventListener('pointercancel', handlePointerEnd);
+      canvas.removeEventListener('lostpointercapture', handlePointerEnd);
     };
   }, [applyCanvasDimensions, handlePointerDown, handlePointerMove, handlePointerEnd, isFullscreen]);
 
@@ -301,6 +378,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       onSave(canvasRef.current.toDataURL());
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    clear: handleClear,
+    exportDataUrl: () => canvasRef.current?.toDataURL() ?? null,
+  }));
 
   return (
     <div
@@ -361,30 +443,30 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           </div>
         )}
 
-        <div
-          className={`canvas-hud__actions ${isFullscreen ? 'fs-canvas-actions' : ''}`}
-          data-testid="fs-canvas-actions"
-        >
-          <motion.button
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={handleClear}
-            className="canvas-hud-action canvas-hud-action--trash"
-            title="Clear Canvas"
-          >
-            <Trash2 className="canvas-hud-action__icon" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={handleSave}
-            className="canvas-hud-action canvas-hud-action--save"
-            title="Save Masterpiece"
-          >
-            <Save className="canvas-hud-action__icon" />
-          </motion.button>
-        </div>
+        {/* In fullscreen, save/trash render in fs-board__ui (above the dock stacking context). */}
+        {!isFullscreen && (
+          <div className="canvas-hud__actions" data-testid="fs-canvas-actions">
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={handleClear}
+              className="canvas-hud-action canvas-hud-action--trash"
+              title="Clear Canvas"
+            >
+              <Trash2 className="canvas-hud-action__icon" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={handleSave}
+              className="canvas-hud-action canvas-hud-action--save"
+              title="Save Masterpiece"
+            >
+              <Save className="canvas-hud-action__icon" />
+            </motion.button>
+          </div>
+        )}
       </div>
     </div>
   );
-};
+});
